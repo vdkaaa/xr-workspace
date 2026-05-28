@@ -1,0 +1,37 @@
+# Unity
+unity-client/Library/
+unity-client/Temp/
+unity-client/Logs/
+unity-client/UserSettings/
+unity-client/obj/
+unity-client/Build/
+unity-client/.vsconfig
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.apk
+*.aab
+*.unitypackage
+*.tmp
+sysinfo.txt
+crashlytics-build.properties
+
+# Node
+node_modules/
+.env
+.env.local
+.env.production
+dist/
+.next/
+.cache/
+
+# General
+.DS_Store
+*.log
+*.orig
+.idea/
+.vscode/settings.json
