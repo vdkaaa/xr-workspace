@@ -46,7 +46,7 @@ CREATE TABLE sessions (
   participants UUID[] DEFAULT '{}'
 );
 
--- RLS
+-- RLS (Row Level Security)
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE room_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE spatial_objects ENABLE ROW LEVEL SECURITY;
