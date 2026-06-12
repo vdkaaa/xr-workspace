@@ -4,10 +4,16 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
-
+import { createServer } from 'http'
+import { initWebSocketServer } from './services/wsService.js'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
+import spatialObjectsRouter from './routes/spatialObjects.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import uploadRouter from './routes/upload.js'
+
+
+
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -34,6 +40,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true }))
+
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
 
@@ -79,7 +86,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
-
+app.use('/api/spatial-objects', spatialObjectsRouter)
+app.use('/api/upload', uploadRouter)
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
 app.use(notFoundHandler)
@@ -87,7 +95,10 @@ app.use(errorHandler)
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = createServer(app)
+initWebSocketServer(server)
+
+server.listen(PORT, () => {
   console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
   console.log(`   Health:  http://localhost:${PORT}/health\n`)
