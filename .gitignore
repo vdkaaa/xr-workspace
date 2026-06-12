@@ -1,11 +1,29 @@
-# Unity
-unity-client/Library/
-unity-client/Temp/
-unity-client/Logs/
-unity-client/UserSettings/
-unity-client/obj/
-unity-client/Build/
-unity-client/.vsconfig
+# ==========================================
+# UNITY
+# ==========================================
+
+# Carpetas generadas (en cualquier subdirectorio)
+**/Library/
+**/Temp/
+**/Logs/
+**/Obj/
+**/Build/
+**/Builds/
+**/UserSettings/
+**/.vs/
+
+# Plastic SCM (control de versiones interno de Unity)
+**/.plastic/
+**/*.plastic.changes
+**/*.plastic.selector
+**/*.plastic.wktree
+**/*.plastic.workspace
+
+# VS Code (proyecto Unity)
+**/.vscode/
+**/*.code-workspace
+
+# Archivos de compilación
 *.pidb
 *.booproj
 *.svd
@@ -13,6 +31,11 @@ unity-client/.vsconfig
 *.mdb
 *.opendb
 *.VC.db
+*.csproj
+*.unityproj
+*.sln
+
+# Builds
 *.apk
 *.aab
 *.unitypackage
@@ -20,18 +43,29 @@ unity-client/.vsconfig
 sysinfo.txt
 crashlytics-build.properties
 
-# Node
+# ==========================================
+# NODE / WEB
+# ==========================================
+
 node_modules/
 .env
 .env.local
 .env.production
+.env.staging
 dist/
 .next/
 .cache/
+.turbo/
+*.tsbuildinfo
 
-# General
+# ==========================================
+# GENERAL
+# ==========================================
+
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.log
 *.orig
+*.swp
 .idea/
-.vscode/settings.json
