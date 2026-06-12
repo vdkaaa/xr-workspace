@@ -10,6 +10,10 @@ import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
 import spatialObjectsRouter from './routes/spatialObjects.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import uploadRouter from './routes/upload.js'
+
+
+
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -83,7 +87,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
 app.use('/api/spatial-objects', spatialObjectsRouter)
-
+app.use('/api/upload', uploadRouter)
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
 app.use(notFoundHandler)
