@@ -1,26 +1,40 @@
 import React, { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import { AuthPage } from './pages/AuthPage'
 import { RoomsPage } from './pages/RoomsPage'
 import { api } from './lib/api'
 
+// ─── Ruta protegida — redirige a /login si no hay sesión ──────────────────────
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, token } = useAuthStore()
+  if (!token || !user) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+// ─── Ruta pública — redirige a /rooms si ya hay sesión ───────────────────────
+
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, token } = useAuthStore()
+  if (token && user) return <Navigate to="/rooms" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   const { user, token, isLoading } = useAuthStore()
 
-  // Al arrancar la app, si hay token guardado verificamos que sigue siendo válido
   useEffect(() => {
     if (token && !user) {
       api.auth.me(token)
         .then(u => useAuthStore.setState({ user: u }))
         .catch(() => {
-          // Token inválido o expirado — limpiamos sesión
           localStorage.removeItem('xr_token')
           useAuthStore.setState({ token: null })
         })
     }
   }, [])
 
-  // Pantalla de carga inicial
   if (isLoading || (token && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -29,7 +43,29 @@ export default function App() {
     )
   }
 
-  // Si no hay usuario → pantalla de login
-  // Si hay usuario → pantalla de salas
-  return user ? <RoomsPage /> : <AuthPage />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        } />
+
+        <Route path="/rooms" element={
+          <ProtectedRoute>
+            <RoomsPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Redirige la raíz según si hay sesión o no */}
+        <Route path="/" element={
+          <Navigate to={user ? '/rooms' : '/login'} replace />
+        } />
+
+        {/* Cualquier ruta desconocida → raíz */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
