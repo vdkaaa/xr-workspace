@@ -4,7 +4,8 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
-
+import { createServer } from 'http'
+import { initWebSocketServer } from './services/wsService.js'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
 import spatialObjectsRouter from './routes/spatialObjects.js'
@@ -90,7 +91,10 @@ app.use(errorHandler)
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = createServer(app)
+initWebSocketServer(server)
+
+server.listen(PORT, () => {
   console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
   console.log(`   Health:  http://localhost:${PORT}/health\n`)

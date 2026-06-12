@@ -11,6 +11,7 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@liveblocks/node": "^3.19.5",
     "@supabase/supabase-js": "^2.43.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -18,6 +19,7 @@
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
+    "ws": "^8.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -27,10 +29,14 @@
     "supertest": "^7.0.0"
   },
   "jest": {
-  "testEnvironment": "node",
-  "transform": { "^.+\\.js$": "babel-jest" },
-  "moduleNameMapper": { "^(\\.{1,2}/[^.]*)\\.js$": "$1" },
-  "transformIgnorePatterns": []
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/[^.]*)\\.js$": "$1"
+    },
+    "transformIgnorePatterns": []
   },
   "nodemonConfig": {
     "watch": [
