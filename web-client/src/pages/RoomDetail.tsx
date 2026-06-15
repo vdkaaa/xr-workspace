@@ -19,6 +19,7 @@ import { LiveblocksRoomProvider } from "../components/liveblocks/LiveblocksRoomP
 import { PresenceAvatars } from "../components/liveblocks/PresenceAvatars";
 import { useUpdateMyPresence, useStatus } from "../lib/liveblocks";
 import { RoomScene } from "../components/room/RoomScene";
+import { RoomDashboard } from "../components/room/RoomDashboard";
 
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
@@ -63,7 +64,7 @@ export function RoomDetail() {
   return (
     // roomId = UUID de Supabase → mismo ID que usa Liveblocks para la sala
     <LiveblocksRoomProvider roomId={currentRoom.id}>
-      <RoomContent roomName={currentRoom.name} />
+      <RoomContent roomName={currentRoom.name} roomId={currentRoom.id} />
     </LiveblocksRoomProvider>
   );
 }
@@ -72,9 +73,10 @@ export function RoomDetail() {
 // Puede usar todos los hooks de Liveblocks porque está dentro del RoomProvider.
 interface RoomContentProps {
   roomName: string;
+  roomId: string;
 }
 
-function RoomContent({ roomName }: RoomContentProps) {
+function RoomContent({ roomName, roomId }: RoomContentProps) {
   const updatePresence = useUpdateMyPresence();
   const connectionStatus = useStatus();
   const [showDebug, setShowDebug] = useState(false);
@@ -140,8 +142,10 @@ function RoomContent({ roomName }: RoomContentProps) {
         onMouseLeave={handleMouseLeave}
       >
         {/* DGO-08 ✅ — escena Three.js */}
-        {/* DGO-09 → panel lateral de objetos irá aquí */}
         <RoomScene />
+
+        {/* DGO-09 ✅ — panel lateral de objetos y participantes */}
+        <RoomDashboard roomId={roomId} />
 
         {/* Debug panel (solo en dev) */}
         {showDebug && import.meta.env.DEV && <DebugPanel />}
