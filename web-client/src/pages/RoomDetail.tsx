@@ -18,6 +18,7 @@ import { useAuthStore } from "../stores/authStore";
 import { LiveblocksRoomProvider } from "../components/liveblocks/LiveblocksRoomProvider";
 import { PresenceAvatars } from "../components/liveblocks/PresenceAvatars";
 import { useUpdateMyPresence, useStatus } from "../lib/liveblocks";
+import { RoomScene } from "../components/room/RoomScene";
 
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
@@ -138,9 +139,9 @@ function RoomContent({ roomName }: RoomContentProps) {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {/* DGO-08 → <RoomScene /> irá aquí */}
+        {/* DGO-08 ✅ — escena Three.js */}
         {/* DGO-09 → panel lateral de objetos irá aquí */}
-        <RoomPlaceholder />
+        <RoomScene />
 
         {/* Debug panel (solo en dev) */}
         {showDebug && import.meta.env.DEV && <DebugPanel />}
@@ -149,22 +150,6 @@ function RoomContent({ roomName }: RoomContentProps) {
   );
 }
 
-// ─── Placeholder ──────────────────────────────────────────────────────────────
-// Se reemplaza en DGO-08 con la escena Three.js
-function RoomPlaceholder() {
-  return (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-center space-y-2">
-        <p className="text-gray-600 font-mono text-sm">
-          Liveblocks conectado ✓
-        </p>
-        <p className="text-gray-700 font-mono text-xs">
-          Three.js scene → DGO-08
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Debug panel (dev only) ───────────────────────────────────────────────────
 import { useOthers, useSelf, useStorage } from "../lib/liveblocks";
