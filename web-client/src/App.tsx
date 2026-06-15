@@ -4,7 +4,7 @@ import { useAuthStore } from './stores/authStore'
 import { AuthPage } from './pages/AuthPage'
 import { RoomsPage } from './pages/RoomsPage'
 import { api } from './lib/api'
-
+import { RoomDetail } from './pages/RoomDetail'
 // ─── Ruta protegida — redirige a /login si no hay sesión ──────────────────────
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -51,19 +51,23 @@ export default function App() {
             <AuthPage />
           </PublicRoute>
         } />
-
+  
         <Route path="/rooms" element={
           <ProtectedRoute>
             <RoomsPage />
           </ProtectedRoute>
         } />
-
-        {/* Redirige la raíz según si hay sesión o no */}
+  
+        <Route path="/rooms/:id" element={
+          <ProtectedRoute>
+            <RoomDetail />
+          </ProtectedRoute>
+        } />
+  
         <Route path="/" element={
           <Navigate to={user ? '/rooms' : '/login'} replace />
         } />
-
-        {/* Cualquier ruta desconocida → raíz */}
+  
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

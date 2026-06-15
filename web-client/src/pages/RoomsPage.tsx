@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useRoomStore } from '../stores/roomStore'
 import { Button, Card, Input } from '../components/ui'
 import { Room } from '../lib/api'
+import { useNavigate } from 'react-router-dom'
 
 export const RoomsPage: React.FC = () => {
   const { user, token, logout } = useAuthStore()
@@ -152,6 +153,7 @@ export const RoomsPage: React.FC = () => {
 const RoomCard: React.FC<{ room: Room; delay: number; token: string }> = ({ room, delay }) => {
   const { joinRoom } = useRoomStore()
   const { token } = useAuthStore()
+  const navigate = useNavigate()
   const [joining, setJoining] = useState(false)
 
   const handleJoin = async () => {
@@ -159,8 +161,7 @@ const RoomCard: React.FC<{ room: Room; delay: number; token: string }> = ({ room
     setJoining(true)
     try {
       await joinRoom(token, room.id)
-      // Acá después navegaremos a la sala XR
-      alert(`Unido a "${room.name}" — próximamente abrirá la sala 3D`)
+      navigate(`/rooms/${room.id}`)
     } finally {
       setJoining(false)
     }
