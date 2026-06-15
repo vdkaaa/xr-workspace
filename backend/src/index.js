@@ -11,7 +11,7 @@ import roomsRouter from './routes/rooms.js'
 import spatialObjectsRouter from './routes/spatialObjects.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import uploadRouter from './routes/upload.js'
-
+import liveblocksRouter from './routes/liveblocks.js';
 
 
 
@@ -88,6 +88,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/rooms', roomsRouter)
 app.use('/api/spatial-objects', spatialObjectsRouter)
 app.use('/api/upload', uploadRouter)
+app.use('/api/liveblocks', liveblocksRouter);
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
 app.use(notFoundHandler)
