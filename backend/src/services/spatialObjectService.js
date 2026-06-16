@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase.js'
+import { trackEvent } from './sessionEventService.js'
 
 // ─── Service methods ──────────────────────────────────────────────────────────
 
@@ -65,6 +66,9 @@ export const createSpatialObject = async (roomId, userId, payload) => {
     .single()
 
   if (error) throw error
+
+  await trackEvent(roomId, userId, 'object_add', { type: data.type, object_id: data.id })
+
   return data
 }
 
@@ -164,5 +168,8 @@ export const deleteSpatialObject = async (objectId, userId) => {
     .eq('id', objectId)
 
   if (error) throw error
+
+  await trackEvent(obj.room_id, userId, 'object_delete', { object_id: objectId })
+
   return { deleted: true }
 }

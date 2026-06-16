@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase.js'
+import { trackEvent } from './sessionEventService.js'
 
 const LIVEBLOCKS_API = 'https://api.liveblocks.io/v2'
 
@@ -65,6 +66,11 @@ export const createSnapshot = async (roomId, triggeredBy = 'manual') => {
     .single()
 
   if (insertError) throw insertError
+
+  await trackEvent(roomId, null, 'snapshot', {
+    snapshot_id: snapshot.id,
+    triggered_by: triggeredBy,
+  })
 
   return snapshot
 }
