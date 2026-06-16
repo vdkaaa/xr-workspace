@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { supabaseAdmin } from '../lib/supabase.js'
+import { trackEvent } from './sessionEventService.js'
 
 const MAX_USERS_HARD_LIMIT = 16
 
@@ -224,6 +225,8 @@ export const joinRoom = async (roomId, userId) => {
       { expiresIn: '8h' }
     )
 
+    await trackEvent(roomId, userId, 'join', { role: existingMember.role })
+
     // Ya es miembro, devolver info
     return { joined: true, already_member: true, room, roomToken }
   }
@@ -258,6 +261,8 @@ export const joinRoom = async (roomId, userId) => {
     process.env.JWT_SECRET,
     { expiresIn: '8h' }
   )
+
+  await trackEvent(roomId, userId, 'join', { role })
 
   return { joined: true, room, roomToken }
 }

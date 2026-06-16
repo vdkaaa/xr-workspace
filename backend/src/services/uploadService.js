@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase.js'
+import { trackEvent } from './sessionEventService.js'
 
 /**
  * uploadFile — sube un archivo a Supabase Storage
@@ -67,6 +68,12 @@ export const uploadFile = async (roomId, userId, file) => {
     .single()
 
   if (dbError) throw dbError
+
+  await trackEvent(roomId, userId, 'file_upload', {
+    filename: file.originalname,
+    url: publicUrl,
+    size: file.size,
+  })
 
   return spatialObject
 }

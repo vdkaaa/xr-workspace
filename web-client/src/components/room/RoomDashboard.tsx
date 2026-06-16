@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { useOthers, useSelf } from "../../lib/liveblocks";
 import { getRoomHeaders } from "../../lib/roomHeaders";
 import { useAuthStore } from "../../stores/authStore";
+import { RoomTimeline } from "./RoomTimeline";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SpatialObject {
@@ -31,7 +32,7 @@ interface RoomDashboardProps {
 // ─── Main component ───────────────────────────────────────────────────────────
 export function RoomDashboard({ roomId }: RoomDashboardProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"participants" | "objects">("participants");
+  const [activeTab, setActiveTab] = useState<"participants" | "objects" | "timeline">("participants");
 
   return (
     <>
@@ -61,15 +62,19 @@ export function RoomDashboard({ roomId }: RoomDashboardProps) {
             >
               Objetos
             </TabButton>
+            <TabButton
+              active={activeTab === "timeline"}
+              onClick={() => setActiveTab("timeline")}
+            >
+              Historial
+            </TabButton>
           </div>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            {activeTab === "participants" ? (
-              <ParticipantsTab />
-            ) : (
-              <ObjectsTab roomId={roomId} />
-            )}
+            {activeTab === "participants" && <ParticipantsTab />}
+            {activeTab === "objects" && <ObjectsTab roomId={roomId} />}
+            {activeTab === "timeline" && <RoomTimeline roomId={roomId} />}
           </div>
         </div>
       )}
