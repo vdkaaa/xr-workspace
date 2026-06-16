@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/authorize.js'
 import { validate, createRoomSchema, updateRoomSchema } from '../validators/schemas.js'
 import * as roomService from '../services/roomService.js'
+import * as snapshotService from '../services/snapshotService.js'
 import { ok, errors } from '../lib/response.js'
 
 const router = Router()
@@ -95,6 +96,32 @@ router.post('/:id/join', async (req, res, next) => {
     if (err.status === 404) return errors.notFound(res, 'Sala')
     if (err.status === 403) return errors.forbidden(res)
     if (err.status === 409) return ok(res, null, 409) || res.status(409).json({ ok: false, error: err.message })
+    next(err)
+  }
+})
+
+/**
+ * POST /api/rooms/:id/snapshot
+ * Crea un snapshot manual del estado de la sala (requiere rol editor o superior)
+ */
+router.post('/:id/snapshot', requireRole('editor'), async (req, res, next) => {
+  try {
+    const snapshot = await snapshotService.createSnapshot(req.params.id, 'manual')
+    return ok(res, { snapshot }, 201)
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * GET /api/rooms/:id/snapshots
+ * Lista los últimos 20 snapshots de la sala, ordenados por created_at DESC
+ */
+router.get('/:id/snapshots', async (req, res, next) => {
+  try {
+    const snapshots = await snapshotService.listSnapshots(req.params.id, 20)
+    return ok(res, { snapshots })
+  } catch (err) {
     next(err)
   }
 })
