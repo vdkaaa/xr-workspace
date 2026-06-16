@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #060912;
+  --bg-surface: #0a0f1e;
+  --bg-elevated: #0d1528;
+  --bg-border: rgba(255,255,255,0.07);
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --text-primary: #f0f4ff;
+  --text-secondary: #7b8db5;
+  --text-muted: #3d4f72;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar oscura */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+
+/* Animación de entrada suave */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.4s ease forwards;
+}
+
+.fade-up-delay-1 { animation-delay: 0.05s; opacity: 0; }
+.fade-up-delay-2 { animation-delay: 0.1s;  opacity: 0; }
+.fade-up-delay-3 { animation-delay: 0.15s; opacity: 0; }
+.fade-up-delay-4 { animation-delay: 0.2s;  opacity: 0; }
