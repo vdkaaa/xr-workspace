@@ -4,6 +4,7 @@ import { requireRole } from '../middleware/authorize.js'
 import { validate, createRoomSchema, updateRoomSchema } from '../validators/schemas.js'
 import * as roomService from '../services/roomService.js'
 import * as snapshotService from '../services/snapshotService.js'
+import * as sessionEventService from '../services/sessionEventService.js'
 import { ok, errors } from '../lib/response.js'
 
 const router = Router()
@@ -121,6 +122,40 @@ router.get('/:id/snapshots', async (req, res, next) => {
   try {
     const snapshots = await snapshotService.listSnapshots(req.params.id, 20)
     return ok(res, { snapshots })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * GET /api/rooms/:id/history
+ * Query params: limit, before (cursor created_at), eventType
+ * Devuelve el historial de eventos de la sala (timeline)
+ */
+router.get('/:id/history', async (req, res, next) => {
+  try {
+    const { limit, before, eventType } = req.query
+    const events = await sessionEventService.getHistory(req.params.id, {
+      limit: limit ? Number(limit) : undefined,
+      before: before || null,
+      eventType: eventType || null,
+    })
+    return ok(res, { events })
+  } catch (err) {
+    next(err)
+  }
+})
+
+/**
+ * POST /api/rooms/:id/leave
+ * Cierra la sesión del usuario en la sala explícitamente (trackea 'leave')
+ */
+router.post('/:id/leave', async (req, res, next) => {
+  try {
+    await sessionEventService.trackEvent(req.params.id, req.user.id, 'leave', {
+      user_id: req.user.id,
+    })
+    return ok(res, { left: true })
   } catch (err) {
     next(err)
   }
