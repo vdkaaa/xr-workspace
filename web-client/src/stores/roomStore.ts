@@ -3,6 +3,7 @@ import { api, Room, CreateRoomPayload } from '../lib/api'
 
 interface RoomStore {
   rooms: Room[]
+  roomToken: string | null
   isLoading: boolean
   error: string | null
 
@@ -10,11 +11,13 @@ interface RoomStore {
   fetchRooms: (token: string) => Promise<void>
   createRoom: (token: string, payload: CreateRoomPayload) => Promise<Room>
   joinRoom: (token: string, roomId: string) => Promise<void>
+  clearRoomToken: () => void
   clearError: () => void
 }
 
 export const useRoomStore = create<RoomStore>((set) => ({
   rooms: [],
+  roomToken: null,
   isLoading: false,
   error: null,
 
@@ -43,12 +46,14 @@ export const useRoomStore = create<RoomStore>((set) => ({
 
   joinRoom: async (token, roomId) => {
     try {
-      await api.rooms.join(token, roomId)
+      const result = await api.rooms.join(token, roomId)
+      set({ roomToken: result.roomToken ?? null })
     } catch (err: any) {
       set({ error: err.message })
       throw err
     }
   },
 
+  clearRoomToken: () => set({ roomToken: null }),
   clearError: () => set({ error: null }),
 }))

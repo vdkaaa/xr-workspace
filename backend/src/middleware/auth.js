@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken'
 import { supabase } from '../lib/supabase.js'
 import { errors } from '../lib/response.js'
 
@@ -28,6 +29,20 @@ export const requireAuth = async (req, res, next) => {
     // Adjuntar usuario al request para uso posterior
     req.user = user
     req.token = token
+
+    const roomToken = req.headers['x-room-token']
+    if (roomToken) {
+      try {
+        const decoded = jwt.verify(roomToken, process.env.JWT_SECRET)
+        if (decoded.sub === req.user.id) {
+          req.user.role = decoded.role
+          req.user.room_id = decoded.room_id
+        }
+      } catch {
+        // El token de sala es opcional aquí; requireRole lo rechazará si hace falta.
+      }
+    }
+
     next()
   } catch (err) {
     return errors.serverError(res, err)

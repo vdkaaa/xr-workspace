@@ -5,7 +5,8 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 async function request<T>(
   path: string,
   options: RequestInit = {},
-  token?: string
+  token?: string,
+  roomToken?: string | null
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -15,6 +16,10 @@ async function request<T>(
   // Si hay token, lo agrega en el header Authorization
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
+  }
+
+  if (roomToken) {
+    headers['x-room-token'] = roomToken
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -63,7 +68,10 @@ export const api = {
       }, token),
 
     join: (token: string, roomId: string) =>
-      request(`/api/rooms/${roomId}/join`, { method: 'POST' }, token),
+      request<JoinRoomResponse>(`/api/rooms/${roomId}/join`, { method: 'POST' }, token),
+
+    remove: (token: string, roomId: string, roomToken?: string | null) =>
+      request<{ deleted: boolean }>(`/api/rooms/${roomId}`, { method: 'DELETE' }, token, roomToken),
   },
 }
 
@@ -84,4 +92,11 @@ export interface CreateRoomPayload {
   description?: string
   max_users?: number
   is_public?: boolean
+}
+
+export interface JoinRoomResponse {
+  joined: boolean
+  already_member?: boolean
+  room: Room
+  roomToken?: string
 }
