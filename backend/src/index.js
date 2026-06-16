@@ -12,6 +12,7 @@ import spatialObjectsRouter from './routes/spatialObjects.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import uploadRouter from './routes/upload.js'
 import liveblocksRouter from './routes/liveblocks.js';
+import internalRouter from './routes/internal.js'
 
 
 
@@ -89,6 +90,7 @@ app.use('/api/rooms', roomsRouter)
 app.use('/api/spatial-objects', spatialObjectsRouter)
 app.use('/api/upload', uploadRouter)
 app.use('/api/liveblocks', liveblocksRouter);
+app.use('/api/internal', internalRouter)
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
 app.use(notFoundHandler)
@@ -97,12 +99,15 @@ app.use(errorHandler)
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 const server = createServer(app)
-initWebSocketServer(server)
 
-server.listen(PORT, () => {
-  console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
-  console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`   Health:  http://localhost:${PORT}/health\n`)
-})
+if (process.env.NODE_ENV !== 'test') {
+  initWebSocketServer(server)
+
+  server.listen(PORT, () => {
+    console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
+    console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`   Health:  http://localhost:${PORT}/health\n`)
+  })
+}
 
 export default app
