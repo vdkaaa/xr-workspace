@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from "react";
 import { useOthers, useSelf } from "../../lib/liveblocks";
+import { getRoomHeaders } from "../../lib/roomHeaders";
 import { useAuthStore } from "../../stores/authStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -219,7 +220,7 @@ function ObjectsTab({ roomId }: { roomId: string }) {
     try {
       const res = await fetch(
         `${apiUrl}/api/spatial-objects?room_id=${roomId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}`, ...getRoomHeaders() } }
       );
       const data = await res.json();
       if (data.ok) setObjects(data.data ?? []);
@@ -248,7 +249,7 @@ function ObjectsTab({ roomId }: { roomId: string }) {
 
       const res = await fetch(`${apiUrl}/api/upload`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, ...getRoomHeaders() },
         body: formData,
       });
 

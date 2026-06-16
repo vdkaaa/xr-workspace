@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken'
 import { supabaseAdmin } from '../lib/supabase.js'
 
 const MAX_USERS_HARD_LIMIT = 16
@@ -217,8 +218,14 @@ export const joinRoom = async (roomId, userId) => {
       throw err
     }
 
+    const roomToken = jwt.sign(
+      { sub: userId, room_id: roomId, role: existingMember.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    )
+
     // Ya es miembro, devolver info
-    return { joined: true, already_member: true, room }
+    return { joined: true, already_member: true, room, roomToken }
   }
 
   // Contar miembros actuales
@@ -245,5 +252,12 @@ export const joinRoom = async (roomId, userId) => {
 
   if (joinError) throw joinError
 
-  return { joined: true, room }
+  const role = 'editor'
+  const roomToken = jwt.sign(
+    { sub: userId, room_id: roomId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: '8h' }
+  )
+
+  return { joined: true, room, roomToken }
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { requireAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/authorize.js'
 import { uploadFile } from '../services/uploadService.js'
 import { ok, errors } from '../lib/response.js'
 
@@ -29,7 +30,7 @@ router.use(requireAuth)
  * POST /api/upload
  * Form-data: file (archivo), room_id (string)
  */
-router.post('/', upload.single('file'), async (req, res, next) => {
+router.post('/', requireRole('editor'), upload.single('file'), async (req, res, next) => {
   try {
     const { room_id } = req.body
 

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/authorize.js'
 import * as spatialObjectService from '../services/spatialObjectService.js'
 import { ok, errors } from '../lib/response.js'
 
@@ -27,7 +28,7 @@ router.get('/', async (req, res, next) => {
  * POST /api/spatial-objects
  * Body: { room_id, type, position?, rotation?, scale?, content_url?, metadata? }
  */
-router.post('/', async (req, res, next) => {
+router.post('/', requireRole('editor'), async (req, res, next) => {
   try {
     const { room_id, ...payload } = req.body
     if (!room_id) return errors.notFound(res, 'room_id requerido')
@@ -45,7 +46,7 @@ router.post('/', async (req, res, next) => {
  * Body: { position?, rotation?, scale?, metadata?, content_url? }
  * Usado por Unity cuando alguien mueve un objeto
  */
-router.patch('/:id', async (req, res, next) => {
+router.patch('/:id', requireRole('editor'), async (req, res, next) => {
   try {
     const obj = await spatialObjectService.updateSpatialObject(
       req.params.id,
@@ -63,7 +64,7 @@ router.patch('/:id', async (req, res, next) => {
 /**
  * DELETE /api/spatial-objects/:id
  */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('editor'), async (req, res, next) => {
   try {
     await spatialObjectService.deleteSpatialObject(req.params.id, req.user.id)
     return ok(res, { deleted: true })

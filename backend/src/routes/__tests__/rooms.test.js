@@ -5,6 +5,7 @@
 jest.mock('../../lib/supabase.js')
 
 import { supabase, supabaseAdmin } from '../../lib/supabase.js'
+import jwt from 'jsonwebtoken'
 import request from 'supertest'
 import app from '../../index.js'
 
@@ -13,6 +14,9 @@ import app from '../../index.js'
 const uuid = (n = 1) => `00000000-0000-0000-0000-00000000000${n}`
 const AUTH_USER = { id: uuid(99), email: 'diego@test.com' }
 const FAKE_TOKEN = 'Bearer fake-jwt-token'
+const TEST_JWT_SECRET = 'test-jwt-secret'
+const roomToken = (role = 'owner', roomId = uuid(1)) =>
+  jwt.sign({ sub: AUTH_USER.id, room_id: roomId, role }, TEST_JWT_SECRET)
 
 const mockRoom = (o = {}) => ({
   id: uuid(1), name: 'Test Room', description: null,
@@ -36,6 +40,7 @@ const withAuth = () => {
 beforeEach(() => {
   jest.clearAllMocks()
   dbQueue.length = 0
+  process.env.JWT_SECRET = TEST_JWT_SECRET
 
   supabase.auth.getUser.mockResolvedValue({
     data: { user: null },
@@ -249,21 +254,25 @@ describe('DELETE /api/rooms/:id', () => {
     withAuth()
     db({ data: null, error: { code: 'PGRST116' } })
     expect((await request(app).delete(`/api/rooms/${uuid(1)}`)
-      .set('Authorization', FAKE_TOKEN)).status).toBe(404)
+      .set('Authorization', FAKE_TOKEN)
+      .set('x-room-token', roomToken())).status).toBe(404)
   })
 
   it('403 usuario no es owner', async () => {
     withAuth()
     db({ data: { owner_id: uuid(50) }, error: null })
     expect((await request(app).delete(`/api/rooms/${uuid(1)}`)
-      .set('Authorization', FAKE_TOKEN)).status).toBe(403)
+      .set('Authorization', FAKE_TOKEN)
+      .set('x-room-token', roomToken())).status).toBe(403)
   })
 
   it('200 elimina sala si usuario es owner', async () => {
     withAuth()
     db({ data: { owner_id: AUTH_USER.id }, error: null }, { error: null })
     const { status, body } = await request(app)
-      .delete(`/api/rooms/${uuid(1)}`).set('Authorization', FAKE_TOKEN)
+      .delete(`/api/rooms/${uuid(1)}`)
+      .set('Authorization', FAKE_TOKEN)
+      .set('x-room-token', roomToken())
     expect(status).toBe(200)
     expect(body.data.deleted).toBe(true)
   })
@@ -309,6 +318,7 @@ describe('POST /api/rooms/:id/join', () => {
       .post(`/api/rooms/${room.id}/join`).set('Authorization', FAKE_TOKEN)
     expect(status).toBe(200)
     expect(body.data.joined).toBe(true)
+    expect(typeof body.data.roomToken).toBe('string')
   })
 
   it('200 already_member en sala privada', async () => {
@@ -319,5 +329,6 @@ describe('POST /api/rooms/:id/join', () => {
       .post(`/api/rooms/${room.id}/join`).set('Authorization', FAKE_TOKEN)
     expect(status).toBe(200)
     expect(body.data.already_member).toBe(true)
+    expect(typeof body.data.roomToken).toBe('string')
   })
 })

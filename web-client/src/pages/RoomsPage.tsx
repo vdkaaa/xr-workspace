@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 
 export const RoomsPage: React.FC = () => {
   const { user, token, logout } = useAuthStore()
-  const { rooms, isLoading, fetchRooms, createRoom } = useRoomStore()
+  const { rooms, isLoading, fetchRooms, createRoom, clearRoomToken } = useRoomStore()
 
   // Modal de crear sala
   const [showCreate, setShowCreate] = useState(false)
@@ -17,8 +17,14 @@ export const RoomsPage: React.FC = () => {
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
+    clearRoomToken()
     if (token) fetchRooms(token)
-  }, [token])
+  }, [token, fetchRooms, clearRoomToken])
+
+  const handleLogout = () => {
+    clearRoomToken()
+    logout()
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +60,7 @@ export const RoomsPage: React.FC = () => {
             <span className="text-sm text-[var(--text-secondary)]">
               {user?.name || user?.email}
             </span>
-            <Button variant="ghost" onClick={logout} className="text-xs px-3 py-2">
+            <Button variant="ghost" onClick={handleLogout} className="text-xs px-3 py-2">
               Salir
             </Button>
           </div>

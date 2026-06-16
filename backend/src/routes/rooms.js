@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/authorize.js'
 import { validate, createRoomSchema, updateRoomSchema } from '../validators/schemas.js'
 import * as roomService from '../services/roomService.js'
 import { ok, errors } from '../lib/response.js'
@@ -70,7 +71,7 @@ router.patch('/:id', validate(updateRoomSchema), async (req, res, next) => {
  * DELETE /api/rooms/:id
  * Elimina la sala (solo el owner)
  */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireRole('owner'), async (req, res, next) => {
   try {
     await roomService.deleteRoom(req.params.id, req.user.id)
     return ok(res, { deleted: true })
