@@ -1,0 +1,16 @@
+name: Snapshot cron
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # cada 30 minutos
+  workflow_dispatch:           # permite correrlo manualmente desde GitHub
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger snapshot
+        run: |
+          curl -s -X POST \
+            https://xr-workspace-production-1728.up.railway.app/api/internal/snapshot-all \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
