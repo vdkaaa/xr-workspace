@@ -13,7 +13,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import uploadRouter from './routes/upload.js'
 import liveblocksRouter from './routes/liveblocks.js';
 import internalRouter from './routes/internal.js'
-
+import livekitRoutes from './routes/livekit.js';
 
 
 const app = express()
@@ -91,6 +91,8 @@ app.use('/api/spatial-objects', spatialObjectsRouter)
 app.use('/api/upload', uploadRouter)
 app.use('/api/liveblocks', liveblocksRouter);
 app.use('/api/internal', internalRouter)
+app.use('/api/livekit', livekitRoutes);
+
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
 app.use(notFoundHandler)
