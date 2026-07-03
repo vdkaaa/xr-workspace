@@ -1,36 +1,115 @@
-import Fastify from 'fastify'
-import cors from '@fastify/cors'
-import jwt from '@fastify/jwt'
-import rateLimit from '@fastify/rate-limit'
-import { redis } from './lib/redis.js'
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import helmet from 'helmet'
+import morgan from 'morgan'
+import rateLimit from 'express-rate-limit'
+import { createServer } from 'http'
+import { initWebSocketServer } from './services/wsService.js'
+import authRouter from './routes/auth.js'
+import roomsRouter from './routes/rooms.js'
+import spatialObjectsRouter from './routes/spatialObjects.js'
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import uploadRouter from './routes/upload.js'
+import liveblocksRouter from './routes/liveblocks.js';
+import internalRouter from './routes/internal.js'
+import livekitRoutes from './routes/livekit.js';
 
-const fastify = Fastify({ logger: true })
 
-await fastify.register(cors, { origin: true })
-await fastify.register(jwt, { secret: process.env.JWT_SECRET })
-await fastify.register(rateLimit, {
-  global: true,
+const app = express()
+const PORT = process.env.PORT || 3000
+
+// ─── Seguridad y parsing ──────────────────────────────────────────────────────
+
+app.use(helmet())
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim())
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (Postman, curl, Unity)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error(`CORS: origen no permitido: ${origin}`))
+    }
+  },
+  credentials: true,
+}))
+
+app.use(express.json({ limit: '1mb' }))
+app.use(express.urlencoded({ extended: true }))
+
+
+// ─── Logging ──────────────────────────────────────────────────────────────────
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'))
+}
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+
+// General: 100 requests por 15 minutos
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 100,
-  timeWindow: '1 minute',
-  redis,
-  keyGenerator: (req) => req.user?.userId || req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Demasiadas peticiones, intenta más tarde' },
 })
 
-import authRoutes from './routes/auth.js'
-import roomRoutes from './routes/rooms.js'
-import sessionRoutes from './routes/sessions.js'
-import liveblocksRoutes from './routes/liveblocks.js'
+// Auth: 10 intentos por 15 minutos (brute force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Demasiados intentos de autenticación' },
+})
 
-fastify.register(authRoutes, { prefix: '/api/auth' })
-fastify.register(roomRoutes, { prefix: '/api/rooms' })
-fastify.register(sessionRoutes, { prefix: '/api/sessions' })
-fastify.register(liveblocksRoutes, { prefix: '/api' })
+app.use('/api', generalLimiter)
+app.use('/api/auth', authLimiter)
 
-fastify.get('/health', async () => ({ status: 'ok' }))
+// ─── Health check ─────────────────────────────────────────────────────────────
 
-try {
-  await fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' })
-} catch (err) {
-  fastify.log.error(err)
-  process.exit(1)
+app.get('/health', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'xr-rooms-backend',
+    env: process.env.NODE_ENV,
+    ts: new Date().toISOString(),
+  })
+})
+
+// ─── Rutas ────────────────────────────────────────────────────────────────────
+
+app.use('/api/auth', authRouter)
+app.use('/api/rooms', roomsRouter)
+app.use('/api/spatial-objects', spatialObjectsRouter)
+app.use('/api/upload', uploadRouter)
+app.use('/api/liveblocks', liveblocksRouter);
+app.use('/api/internal', internalRouter)
+app.use('/api/livekit', livekitRoutes);
+
+// ─── Error handlers ───────────────────────────────────────────────────────────
+
+app.use(notFoundHandler)
+app.use(errorHandler)
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+
+const server = createServer(app)
+
+if (process.env.NODE_ENV !== 'test') {
+  initWebSocketServer(server)
+
+  server.listen(PORT, () => {
+    console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
+    console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`   Health:  http://localhost:${PORT}/health\n`)
+  })
 }
+
+export default app
