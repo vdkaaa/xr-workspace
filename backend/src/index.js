@@ -14,7 +14,7 @@ import uploadRouter from './routes/upload.js'
 import liveblocksRouter from './routes/liveblocks.js';
 import internalRouter from './routes/internal.js'
 import livekitRoutes from './routes/livekit.js';
-
+import summaryRoutes from './routes/summary.js' 
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -92,6 +92,7 @@ app.use('/api/upload', uploadRouter)
 app.use('/api/liveblocks', liveblocksRouter);
 app.use('/api/internal', internalRouter)
 app.use('/api/livekit', livekitRoutes);
+app.use('/api/rooms', summaryRoutes)
 
 // ─── Error handlers ───────────────────────────────────────────────────────────
 
