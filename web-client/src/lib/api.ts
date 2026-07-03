@@ -73,6 +73,17 @@ export const api = {
     remove: (token: string, roomId: string, roomToken?: string | null) =>
       request<{ deleted: boolean }>(`/api/rooms/${roomId}`, { method: 'DELETE' }, token, roomToken),
   },
+
+  livekit: {
+    token: (token: string, roomId: string) =>
+      request<{
+        token: string
+        url: string
+        room_id: string
+        identity: string
+        can_publish: boolean
+      }>(`/api/livekit/token?room_id=${roomId}`, {}, token),
+  },
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -100,3 +111,5 @@ export interface JoinRoomResponse {
   room: Room
   roomToken?: string
 }
+
+

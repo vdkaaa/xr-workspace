@@ -20,6 +20,7 @@ import { PresenceAvatars } from "../components/liveblocks/PresenceAvatars";
 import { useUpdateMyPresence, useStatus } from "../lib/liveblocks";
 import { RoomScene } from "../components/room/RoomScene";
 import { RoomDashboard } from "../components/room/RoomDashboard";
+import { VoiceRoom } from "../components/voice/VoiceRoom";
 
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
@@ -146,6 +147,9 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
 
         {/* DGO-09 ✅ — panel lateral de objetos y participantes */}
         <RoomDashboard roomId={roomId} />
+
+        {/* DGO-14 ✅ — voz en el browser */}
+        <VoiceRoom roomId={roomId} />
 
         {/* Debug panel (solo en dev) */}
         {showDebug && import.meta.env.DEV && <DebugPanel />}
