@@ -21,6 +21,7 @@ import { useUpdateMyPresence, useStatus } from "../lib/liveblocks";
 import { RoomScene } from "../components/room/RoomScene";
 import { RoomDashboard } from "../components/room/RoomDashboard";
 import { VoiceRoom } from "../components/voice/VoiceRoom";
+import { SummaryPanel } from "../components/room/SummaryPanel";
 
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
@@ -28,15 +29,18 @@ import { VoiceRoom } from "../components/voice/VoiceRoom";
 export function RoomDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { rooms, fetchRooms, isLoading, error } = useRoomStore();
+  const { rooms, fetchRooms, joinRoom, isLoading, error } = useRoomStore();
   const token = useAuthStore((s) => s.token);
 
   // Derivar la sala del array de rooms por id de URL
   const currentRoom = rooms.find((r) => r.id === id);
 
   useEffect(() => {
-    if (token) fetchRooms(token);
-  }, [token, fetchRooms]);
+  if (token) {
+    fetchRooms(token);
+    if (id) joinRoom(token, id); // garantiza el roomToken en el store (rol de sala)
+  }
+  }, [token, id, fetchRooms, joinRoom]);
 
   if (isLoading) {
     return (
@@ -150,6 +154,8 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
 
         {/* DGO-14 ✅ — voz en el browser */}
         <VoiceRoom roomId={roomId} />
+
+        {<SummaryPanel roomId={roomId} />}
 
         {/* Debug panel (solo en dev) */}
         {showDebug && import.meta.env.DEV && <DebugPanel />}
