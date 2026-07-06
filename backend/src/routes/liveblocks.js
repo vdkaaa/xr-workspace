@@ -36,8 +36,50 @@ function getLiveblocks() {
 }
 
 /**
- * POST /api/liveblocks/auth
- * Body: { room: string }  ← roomId UUID de Supabase
+ * @swagger
+ * /api/liveblocks/auth:
+ *   post:
+ *     tags: [Rooms]
+ *     summary: Autorizar sesión de Liveblocks
+ *     description: |
+ *       Endpoint que llama el cliente de Liveblocks (`authEndpoint`) para obtener un
+ *       token de acceso al storage colaborativo en tiempo real de una sala. Verifica
+ *       membresía (o que la sala sea pública/el usuario sea owner) antes de autorizar.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [room]
+ *             properties:
+ *               room:
+ *                 type: string
+ *                 format: uuid
+ *                 description: UUID de la sala (Supabase)
+ *           example:
+ *             room: "8a1e...-room"
+ *     responses:
+ *       200:
+ *         description: Token de Liveblocks generado (formato definido por el SDK de Liveblocks)
+ *         content:
+ *           application/json:
+ *             example: { token: "eyJhbGciOiJFUzI1NiJ9..." }
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: Sala privada y el usuario no es miembro ni owner
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "Sin permisos para esta acción" }
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequests'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post("/auth", requireAuth, async (req, res) => {
   try {

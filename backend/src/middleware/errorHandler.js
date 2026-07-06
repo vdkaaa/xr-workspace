@@ -6,7 +6,8 @@ import { logger } from '../lib/logger.js'
  * errorHandler — middleware global de manejo de errores.
  * Va al final de todos los middlewares en index.js
  */
-export const errorHandler = (err, req, res, next) => {
+// eslint-disable-next-line no-unused-vars
+export const errorHandler = (err, req, res, _next) => {
   // Error de CORS (origen no permitido) — rechazar explícitamente, no solo loguear
   if (err?.isCorsError) {
     logger.warn({ err }, '[CORS] Origen rechazado')

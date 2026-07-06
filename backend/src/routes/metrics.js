@@ -18,6 +18,45 @@ const router = Router()
 // (mismo criterio que snapshotService.snapshotActiveRooms).
 const ACTIVE_ROOM_WINDOW_MINUTES = 30
 
+/**
+ * @swagger
+ * /api/metrics:
+ *   get:
+ *     tags: [Internal, Metrics]
+ *     summary: (Interno) Métricas operativas del servicio
+ *     description: |
+ *       **Uso interno/operativo — no para consumo público.** Sin autenticación de usuario.
+ *       Si la variable de entorno `METRICS_KEY` está definida, exige `?key=<METRICS_KEY>`.
+ *     security: []
+ *     parameters:
+ *       - name: key
+ *         in: query
+ *         required: false
+ *         schema: { type: string }
+ *         description: Requerido solo si METRICS_KEY está configurada en el entorno
+ *     responses:
+ *       200:
+ *         description: Métricas actuales
+ *         content:
+ *           application/json:
+ *             example:
+ *               ok: true
+ *               data:
+ *                 totalRequests: 15234
+ *                 total5xxErrors: 2
+ *                 activeRooms: 4
+ *                 activeRoomsWindowMinutes: 30
+ *                 uptimeSeconds: 86400
+ *       401:
+ *         description: key ausente o incorrecta (cuando METRICS_KEY está configurada)
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "No autorizado" }
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequests'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/', async (req, res, next) => {
   try {
     const metricsKey = process.env.METRICS_KEY

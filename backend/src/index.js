@@ -2,9 +2,12 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 import { createServer } from 'http'
 import { initWebSocketServer } from './services/wsService.js'
 import { logger } from './lib/logger.js'
+import { swaggerSpec } from './lib/swagger.js'
+import { docsGuard } from './middleware/docsGuard.js'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
 import spatialObjectsRouter from './routes/spatialObjects.js'
@@ -89,6 +92,16 @@ app.get('/health', (req, res) => {
 // ─── Metrics ──────────────────────────────────────────────────────────────────
 
 app.use('/api/metrics', metricsRouter)
+
+// ─── API Docs (DGO-18) ──────────────────────────────────────────────────────────
+// En producción exige ?key=<DOCS_KEY> (ver docsGuard.js).
+
+app.use(
+  '/api/docs',
+  docsGuard,
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { customSiteTitle: 'XR Rooms Meet API Docs' }),
+)
 
 // ─── Rutas ────────────────────────────────────────────────────────────────────
 
