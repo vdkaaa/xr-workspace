@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws'
 import { Liveblocks } from '@liveblocks/node'
 import { trackEvent } from './sessionEventService.js'
+import { logger } from '../lib/logger.js'
 
 const rooms = new Map()
 
@@ -32,7 +33,10 @@ export const initWebSocketServer = (server) => {
 
     if (!rooms.has(roomId)) rooms.set(roomId, new Set())
     rooms.get(roomId).add(ws)
-    console.log(`[WS] Cliente conectado a sala ${roomId}. Total: ${rooms.get(roomId).size}`)
+    logger.info(
+      { roomId, userId, connections: rooms.get(roomId).size },
+      `[WS] Cliente conectado a sala ${roomId}. Total: ${rooms.get(roomId).size}`,
+    )
 
     // Registrar el join (fire-and-forget) — la conexión WS no viene de HTTP
     const connectedAt = Date.now()
@@ -42,30 +46,31 @@ export const initWebSocketServer = (server) => {
       try {
         const message = JSON.parse(raw.toString())
         const { type, data } = message
-        console.log(`[WS] Evento recibido: ${type}`)
+        logger.info({ roomId, userId, type }, `[WS] Evento recibido: ${type}`)
 
         await getLiveblocks().broadcastEvent(roomId, { type, data })  // ← lazy aquí
         broadcastToRoom(roomId, message, ws)
       } catch (err) {
-        console.error('[WS] Error procesando mensaje:', err)
+        logger.error({ err, roomId, userId }, '[WS] Error procesando mensaje')
       }
     })
 
     ws.on('close', () => {
       rooms.get(roomId)?.delete(ws)
       if (rooms.get(roomId)?.size === 0) rooms.delete(roomId)
-      console.log(`[WS] Cliente desconectado de sala ${roomId}`)
 
       const durationSeconds = Math.round((Date.now() - connectedAt) / 1000)
+      logger.info({ roomId, userId, durationSeconds }, `[WS] Cliente desconectado de sala ${roomId}`)
+
       trackEvent(roomId, userId, 'leave', { duration_seconds: durationSeconds })
     })
 
-    ws.on('error', (err) => console.error('[WS] Error:', err))
+    ws.on('error', (err) => logger.error({ err, roomId, userId }, '[WS] Error de conexión'))
 
     ws.send(JSON.stringify({ type: 'CONNECTED', data: { roomId } }))
   })
 
-  console.log('[WS] WebSocket server inicializado')
+  logger.info('[WS] WebSocket server inicializado')
   return wss
 }
 

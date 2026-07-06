@@ -30,6 +30,11 @@ export const requireAuth = async (req, res, next) => {
     req.user = user
     req.token = token
 
+    // Si pino-http está montado, propaga el userId a los logs de esta request
+    if (req.log?.child) {
+      req.log = req.log.child({ userId: user.id })
+    }
+
     const roomToken = req.headers['x-room-token']
     if (roomToken) {
       try {

@@ -27,8 +27,62 @@ const upload = multer({
 router.use(requireAuth)
 
 /**
- * POST /api/upload
- * Form-data: file (archivo), room_id (string)
+ * @swagger
+ * /api/upload:
+ *   post:
+ *     tags: [Upload]
+ *     summary: Subir un archivo a una sala
+ *     description: |
+ *       Sube una imagen (jpeg/png/gif/webp) o PDF, máximo 10MB, y lo registra como
+ *       objeto espacial en la sala.
+ *       **Rol requerido:** `editor` o superior.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: x-room-token
+ *         in: header
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file, room_id]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               room_id:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       201:
+ *         description: Archivo subido y objeto espacial creado
+ *         content:
+ *           application/json:
+ *             example:
+ *               ok: true
+ *               data: { id: "obj-2", room_id: "8a1e...-room", type: "file", content_url: "https://.../archivo.png" }
+ *       400:
+ *         description: Tipo de archivo no permitido
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "Tipo de archivo no permitido" }
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Falta room_id o el archivo en el form-data
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "archivo requerido no encontrado" }
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequests'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  */
 router.post('/', requireRole('editor'), upload.single('file'), async (req, res, next) => {
   try {

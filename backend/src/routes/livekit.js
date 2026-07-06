@@ -17,6 +17,55 @@ const querySchema = z.object({
   room_id: z.string().uuid({ message: 'room_id debe ser un UUID válido' }),
 });
 
+/**
+ * @swagger
+ * /api/livekit/token:
+ *   get:
+ *     tags: [Voice]
+ *     summary: Obtener token de voz (LiveKit)
+ *     description: |
+ *       Devuelve un JWT firmado por el servidor para conectarse a la sala de audio de
+ *       LiveKit correspondiente a la sala XR. Solo se emite si el usuario es miembro de
+ *       la sala (o su owner). El rol determina si puede publicar audio (`owner`/`editor`)
+ *       o solo escuchar (`viewer`).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: room_id
+ *         in: query
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: UUID de la sala XR (se usa como nombre de room en LiveKit)
+ *     responses:
+ *       200:
+ *         description: Token de voz generado
+ *         content:
+ *           application/json:
+ *             example:
+ *               ok: true
+ *               data:
+ *                 token: "eyJhbGciOiJIUzI1NiIs..."
+ *                 url: "wss://tu-livekit.livekit.cloud"
+ *                 room_id: "8a1e...-room"
+ *                 identity: "b3f1..."
+ *                 can_publish: true
+ *       400:
+ *         description: room_id inválido (no es un UUID)
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "room_id debe ser un UUID válido" }
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         description: El usuario no es miembro de la sala
+ *         content:
+ *           application/json:
+ *             example: { ok: false, error: "No eres miembro de esta sala" }
+ *       429:
+ *         $ref: '#/components/responses/TooManyRequests'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/token', requireAuth, async (req, res, next) => {
   try {
     const parsed = querySchema.safeParse(req.query);

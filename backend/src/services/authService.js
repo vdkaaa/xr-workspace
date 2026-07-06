@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../lib/supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 /**
  * register — crea un usuario nuevo en Supabase Auth

@@ -1,11 +1,19 @@
 import { ZodError } from 'zod'
 import { fail } from '../lib/response.js'
+import { logger } from '../lib/logger.js'
 
 /**
  * errorHandler — middleware global de manejo de errores.
  * Va al final de todos los middlewares en index.js
  */
-export const errorHandler = (err, req, res, next) => {
+// eslint-disable-next-line no-unused-vars
+export const errorHandler = (err, req, res, _next) => {
+  // Error de CORS (origen no permitido) — rechazar explícitamente, no solo loguear
+  if (err?.isCorsError) {
+    logger.warn({ err }, '[CORS] Origen rechazado')
+    return fail(res, 'Origen no permitido', 403)
+  }
+
   // Error de validación Zod
   if (err instanceof ZodError) {
     return fail(res, 'Datos inválidos', 422, err.flatten().fieldErrors)
@@ -13,12 +21,12 @@ export const errorHandler = (err, req, res, next) => {
 
   // Error de Supabase
   if (err?.code && err?.message) {
-    console.error('[SUPABASE ERROR]', err)
+    logger.error({ err }, '[SUPABASE ERROR]')
     return fail(res, err.message, 400)
   }
 
   // Error genérico
-  console.error('[UNHANDLED ERROR]', err)
+  logger.error({ err }, '[UNHANDLED ERROR]')
   return res.status(500).json({
     ok: false,
     error: 'Error interno del servidor',

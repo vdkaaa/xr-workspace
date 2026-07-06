@@ -6,12 +6,13 @@
 // reciben el JWT ya firmado por este servicio.
 
 import { AccessToken } from 'livekit-server-sdk';
+import { logger } from '../lib/logger.js';
 
 const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
 
 if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
   // Falla temprano en boot si falta config — evita tokens inválidos en runtime.
-  console.warn(
+  logger.warn(
     '[livekit] Faltan variables de entorno: LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL',
   );
 }

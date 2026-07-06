@@ -2,24 +2,39 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import morgan from 'morgan'
-import rateLimit from 'express-rate-limit'
+import swaggerUi from 'swagger-ui-express'
 import { createServer } from 'http'
 import { initWebSocketServer } from './services/wsService.js'
+import { logger } from './lib/logger.js'
+import { swaggerSpec } from './lib/swagger.js'
+import { docsGuard } from './middleware/docsGuard.js'
 import authRouter from './routes/auth.js'
 import roomsRouter from './routes/rooms.js'
 import spatialObjectsRouter from './routes/spatialObjects.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { generalLimiter, authLimiter } from './middleware/rateLimiter.js'
+import { enforceHttps } from './middleware/enforceHttps.js'
+import { httpLogger } from './middleware/httpLogger.js'
+import { errorTracker } from './middleware/errorTracker.js'
 import uploadRouter from './routes/upload.js'
 import liveblocksRouter from './routes/liveblocks.js';
 import internalRouter from './routes/internal.js'
 import livekitRoutes from './routes/livekit.js';
-import summaryRoutes from './routes/summary.js' 
+import summaryRoutes from './routes/summary.js'
+import metricsRouter from './routes/metrics.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Railway corre detrás de un proxy/load balancer: confiamos en el primer hop
+// para que req.ip / req.protocol / x-forwarded-* reflejen el cliente real
+// (necesario para el rate limiting por IP y para detectar HTTPS correctamente).
+app.set('trust proxy', 1)
+
 // ─── Seguridad y parsing ──────────────────────────────────────────────────────
+
+// Debe ir lo más temprano posible, antes de cualquier otro middleware.
+app.use(enforceHttps)
 
 app.use(helmet())
 
@@ -33,7 +48,9 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
-      callback(new Error(`CORS: origen no permitido: ${origin}`))
+      const err = new Error(`CORS: origen no permitido: ${origin}`)
+      err.isCorsError = true
+      callback(err)
     }
   },
   credentials: true,
@@ -43,33 +60,22 @@ app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true }))
 
 
-// ─── Logging ──────────────────────────────────────────────────────────────────
+// ─── Logging y monitoring (DGO-17) ─────────────────────────────────────────────
 
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'))
+  app.use(httpLogger)
 }
 
+// Cuenta requests totales y errores 5xx; alerta si hay >5 errores 5xx en 5 min.
+app.use(errorTracker)
+
 // ─── Rate limiting ────────────────────────────────────────────────────────────
+// Definido en ./middleware/rateLimiter.js (DGO-16).
 
-// General: 100 requests por 15 minutos
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { ok: false, error: 'Demasiadas peticiones, intenta más tarde' },
-})
-
-// Auth: 10 intentos por 15 minutos (brute force protection)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { ok: false, error: 'Demasiados intentos de autenticación' },
-})
-
+// General: 100 requests por IP cada 15 minutos, para todas las rutas /api/*
 app.use('/api', generalLimiter)
+
+// Estricto: 10 requests por IP cada 15 minutos, para rutas sensibles a fuerza bruta
 app.use('/api/auth', authLimiter)
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -82,6 +88,20 @@ app.get('/health', (req, res) => {
     ts: new Date().toISOString(),
   })
 })
+
+// ─── Metrics ──────────────────────────────────────────────────────────────────
+
+app.use('/api/metrics', metricsRouter)
+
+// ─── API Docs (DGO-18) ──────────────────────────────────────────────────────────
+// En producción exige ?key=<DOCS_KEY> (ver docsGuard.js).
+
+app.use(
+  '/api/docs',
+  docsGuard,
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { customSiteTitle: 'XR Rooms Meet API Docs' }),
+)
 
 // ─── Rutas ────────────────────────────────────────────────────────────────────
 
@@ -107,9 +127,10 @@ if (process.env.NODE_ENV !== 'test') {
   initWebSocketServer(server)
 
   server.listen(PORT, () => {
-    console.log(`\n🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`)
-    console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`)
-    console.log(`   Health:  http://localhost:${PORT}/health\n`)
+    logger.info(
+      { port: PORT, env: process.env.NODE_ENV || 'development' },
+      `🚀 XR Rooms Backend corriendo en http://localhost:${PORT}`,
+    )
   })
 }
 
