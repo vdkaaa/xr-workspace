@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3000
 
 // URL de producción (Railway) — ver backend/DEPLOYMENT.md. Configurable vía
 // env var para no tener que tocar código si cambia el dominio.
-const PRODUCTION_URL = process.env.PUBLIC_API_URL || 'https://xr-workspace.vercel.app/'
+const PRODUCTION_URL = process.env.PUBLIC_API_URL || 'https://xr-workspace-production-1728.up.railway.app'
 
 const definition = {
   openapi: '3.0.0',
