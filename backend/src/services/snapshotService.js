@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabase.js'
 import { trackEvent } from './sessionEventService.js'
+import { logger } from '../lib/logger.js'
 
 const LIVEBLOCKS_API = 'https://api.liveblocks.io/v2'
 
@@ -10,7 +11,7 @@ const LIVEBLOCKS_API = 'https://api.liveblocks.io/v2'
 const fetchLiveblocksState = async (roomId) => {
   const secret = process.env.LIVEBLOCKS_SECRET_KEY
   if (!secret) {
-    console.error('[snapshotService] LIVEBLOCKS_SECRET_KEY no definida')
+    logger.error({ roomId }, '[snapshotService] LIVEBLOCKS_SECRET_KEY no definida')
     return null
   }
 
@@ -20,15 +21,16 @@ const fetchLiveblocksState = async (roomId) => {
     })
 
     if (!res.ok) {
-      console.error(
-        `[snapshotService] Liveblocks REST devolvió ${res.status} para la sala ${roomId}`
+      logger.error(
+        { roomId, status: res.status },
+        `[snapshotService] Liveblocks REST devolvió ${res.status} para la sala ${roomId}`,
       )
       return null
     }
 
     return await res.json()
   } catch (err) {
-    console.error('[snapshotService] Error consultando Liveblocks:', err)
+    logger.error({ err, roomId }, '[snapshotService] Error consultando Liveblocks')
     return null
   }
 }
@@ -98,7 +100,7 @@ export const snapshotActiveRooms = async (sinceMinutes = 31) => {
       const snapshot = await createSnapshot(room.id, 'cron')
       results.push({ room_id: room.id, ok: true, snapshot_id: snapshot.id })
     } catch (err) {
-      console.error(`[snapshotService] Falló snapshot de la sala ${room.id}:`, err)
+      logger.error({ err, roomId: room.id }, `[snapshotService] Falló snapshot de la sala ${room.id}`)
       results.push({ room_id: room.id, ok: false, error: err.message })
     }
   }

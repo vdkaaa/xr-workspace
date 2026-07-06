@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase.js'
+import { logger } from '../lib/logger.js'
 
 /**
  * trackEvent — registra un evento de sesión en session_events.
@@ -26,13 +27,13 @@ export const trackEvent = async (roomId, userId, eventType, payload = {}) => {
       .single()
 
     if (error) {
-      console.error('[sessionEventService] No se pudo registrar el evento:', error)
+      logger.error({ err: error, roomId, userId, eventType }, '[sessionEventService] No se pudo registrar el evento')
       return null
     }
 
     return data
   } catch (err) {
-    console.error('[sessionEventService] Error inesperado en trackEvent:', err)
+    logger.error({ err, roomId, userId, eventType }, '[sessionEventService] Error inesperado en trackEvent')
     return null
   }
 }

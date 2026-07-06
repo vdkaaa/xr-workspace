@@ -19,6 +19,7 @@ import { Liveblocks } from "@liveblocks/node";
 import { requireAuth } from "../middleware/auth.js";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { errors } from "../lib/response.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -43,8 +44,7 @@ router.post("/auth", requireAuth, async (req, res) => {
     const { room: roomId } = req.body;
     const userId = req.user.id;
 
-    console.log("[liveblocks/auth] userId:", userId);
-    console.log("[liveblocks/auth] roomId:", roomId);
+    logger.info({ userId, roomId }, "[liveblocks/auth] Solicitud de token recibida");
 
     // Verificar que el usuario es miembro de la sala
     const { data: membership, error: memberError } = await supabaseAdmin
@@ -54,7 +54,10 @@ router.post("/auth", requireAuth, async (req, res) => {
       .eq("user_id", userId)
       .single();
 
-    console.log("[liveblocks/auth] membership:", membership, "error:", memberError?.message);
+    logger.info(
+      { userId, roomId, membership, memberError: memberError?.message },
+      "[liveblocks/auth] Resultado de membership",
+    );
 
     if (memberError || !membership) {
       // Fallback: verificar si es owner directo o sala pública
@@ -64,7 +67,10 @@ router.post("/auth", requireAuth, async (req, res) => {
         .eq("id", roomId)
         .single();
 
-      console.log("[liveblocks/auth] room:", room, "roomError:", roomError?.message);
+      logger.info(
+        { userId, roomId, room, roomError: roomError?.message },
+        "[liveblocks/auth] Resultado de fallback de sala",
+      );
 
       if (roomError || !room) {
         return errors.notFound(res, "Sala");
@@ -101,11 +107,11 @@ router.post("/auth", requireAuth, async (req, res) => {
     }
 
     const { status, body } = await session.authorize();
-    console.log("[liveblocks/auth] token generado OK para sala:", roomId);
+    logger.info({ userId, roomId }, "[liveblocks/auth] token generado OK para sala");
 
     return res.status(status).json(JSON.parse(body));
   } catch (err) {
-    console.error("[liveblocks/auth] ERROR:", err);
+    logger.error({ err, userId: req.user?.id, roomId: req.body?.room }, "[liveblocks/auth] ERROR");
     return errors.serverError(res, err);
   }
 });

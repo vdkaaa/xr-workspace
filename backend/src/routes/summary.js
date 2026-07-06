@@ -14,6 +14,7 @@ import {
   getLatestSummary,
 } from '../services/summaryService.js'
 import { ok, fail } from '../lib/response.js'
+import { logger } from '../lib/logger.js'
 
 const router = Router({ mergeParams: true })
 
@@ -44,7 +45,7 @@ router.post(
       res.write(`event: done\ndata: ${JSON.stringify({ id: saved.id, stats })}\n\n`)
       res.end()
     } catch (err) {
-      console.error('[summary] error generando resumen:', err)
+      logger.error({ err, roomId, userId }, '[summary] error generando resumen')
       res.write(
         `event: error\ndata: ${JSON.stringify({ message: 'Error generando el resumen' })}\n\n`,
       )
