@@ -48,10 +48,10 @@ crashlytics-build.properties
 # ==========================================
 
 node_modules/
-.env
-.env.local
-.env.production
-.env.staging
+# Bloquea cualquier variante de .env (incluye backups como .env.bak,
+# .env.old, .env.development, etc.) — solo se permite .env.example.
+.env*
+!.env.example
 dist/
 .next/
 .cache/
