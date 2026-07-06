@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblia de Integración — Unity WebGL × XR Rooms Meet</title>
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --bg-panel:#111119;
+    --bg-panel-2:#15151f;
+    --border:#232332;
+    --text:#f0f0f5;
+    --text-dim:#9a9ab0;
+    --blue:#60a5fa;
+    --blue-dim:#2e4a6e;
+    --green:#34d399;
+    --green-dim:#1f5c47;
+    --red:#f87171;
+    --yellow:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;
+  }
+  a{color:var(--blue);}
+  code, pre{
+    font-family:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  code{
+    background:#1c1c28;
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:0.88em;
+    color:#c8d3f5;
+  }
+  pre{
+    background:#0d0d14;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 18px;
+    overflow-x:auto;
+    font-size:0.85em;
+    position:relative;
+    margin:14px 0;
+  }
+  pre code{
+    background:none;
+    padding:0;
+    color:#d5dcf0;
+  }
+  .copy-btn{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:#1c1c28;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-size:11px;
+    padding:4px 9px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .copy-btn:hover{color:var(--text);border-color:var(--blue);}
+
+  /* ── Header ─────────────────────────────────────────── */
+  header{
+    padding:28px 5vw 20px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, #0f0f18 0%, var(--bg) 100%);
+  }
+  header h1{
+    margin:0 0 6px;
+    font-size:1.7rem;
+    letter-spacing:-0.02em;
+  }
+  header .subtitle{
+    color:var(--text-dim);
+    font-size:0.95rem;
+  }
+  .badge{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:999px;
+    font-size:0.72rem;
+    font-weight:600;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .badge.blue{background:rgba(96,165,250,0.15);color:var(--blue);border:1px solid var(--blue-dim);}
+  .badge.green{background:rgba(52,211,153,0.15);color:var(--green);border:1px solid var(--green-dim);}
+  .badge.red{background:rgba(248,113,113,0.15);color:var(--red);border:1px solid #6e2e2e;}
+
+  /* ── Warning banner ─────────────────────────────────── */
+  .warn-banner{
+    margin:16px 5vw 0;
+    background:rgba(251,191,36,0.08);
+    border:1px solid rgba(251,191,36,0.35);
+    border-radius:10px;
+    padding:14px 18px;
+    font-size:0.9rem;
+  }
+  .warn-banner strong{color:var(--yellow);}
+
+  /* ── Tabs ───────────────────────────────────────────── */
+  nav.tabs{
+    position:sticky;
+    top:0;
+    z-index:10;
+    display:flex;
+    gap:4px;
+    flex-wrap:wrap;
+    padding:12px 5vw;
+    background:rgba(10,10,15,0.95);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+  }
+  nav.tabs button{
+    background:transparent;
+    border:1px solid transparent;
+    color:var(--text-dim);
+    padding:7px 13px;
+    border-radius:7px;
+    font-size:0.82rem;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  nav.tabs button:hover{color:var(--text);border-color:var(--border);}
+  nav.tabs button.active{
+    background:rgba(96,165,250,0.12);
+    color:var(--blue);
+    border-color:var(--blue-dim);
+  }
+
+  main{
+    max-width:980px;
+    margin:0 auto;
+    padding:30px 5vw 90px;
+  }
+  section.panel{display:none;}
+  section.panel.active{display:block;animation:fade .15s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  h2{
+    font-size:1.35rem;
+    border-bottom:1px solid var(--border);
+    padding-bottom:10px;
+    margin-top:0;
+  }
+  h3{font-size:1.05rem;color:var(--text);margin-top:32px;}
+  h3 .tag{font-size:0.68rem;font-weight:600;padding:1px 7px;border-radius:5px;margin-left:8px;vertical-align:middle;}
+  h4{font-size:0.92rem;color:var(--text-dim);margin-bottom:6px;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:14px 0;
+    font-size:0.87rem;
+  }
+  th,td{
+    text-align:left;
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  th{color:var(--text-dim);font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.03em;}
+  tr:hover td{background:#111119;}
+
+  .role-owner{color:var(--yellow);font-weight:600;}
+  .role-editor{color:var(--blue);font-weight:600;}
+  .role-viewer{color:var(--text-dim);font-weight:600;}
+
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px;
+    margin:14px 0;
+  }
+  .card.gap{
+    border-color:rgba(251,191,36,0.4);
+    background:rgba(251,191,36,0.05);
+  }
+  .card.gap h4{color:var(--yellow);}
+  .card.ok{border-color:var(--green-dim);}
+
+  .flow{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin:16px 0;
+    font-size:0.85rem;
+  }
+  .flow .step{
+    background:var(--bg-panel-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 12px;
+  }
+  .flow .arrow{color:var(--text-dim);}
+
+  .checklist{list-style:none;padding:0;margin:14px 0;}
+  .checklist li{
+    display:flex;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    margin-bottom:8px;
+    background:var(--bg-panel);
+    font-size:0.88rem;
+  }
+  .checklist li .box{
+    flex-shrink:0;
+    width:16px;height:16px;
+    border:2px solid var(--green);
+    border-radius:4px;
+    margin-top:2px;
+  }
+
+  .grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media (max-width:720px){
+    .grid2{grid-template-columns:1fr;}
+    nav.tabs{padding:10px 4vw;}
+    main{padding:24px 4vw 80px;}
+  }
+
+  .yes{color:var(--green);font-weight:600;}
+  .no{color:var(--red);font-weight:600;}
+
+  footer{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:0.78rem;
+    padding:30px 5vw 50px;
+    border-top:1px solid var(--border);
+    margin-top:40px;
+  }
+
+  .src{
+    font-size:0.72rem;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+  .src code{font-size:0.72rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge blue">Backend · Diego</span><span class="badge green">Unity WebGL · Felipe</span>
+  <h1>Biblia de Integración — Unity WebGL × XR Rooms Meet</h1>
+  <div class="subtitle">Referencia técnica única para conectar el build WebGL de Unity con el backend, Supabase, Liveblocks y LiveKit del proyecto. Todo lo citado acá viene del código real del repo (rutas exactas al final de cada bloque).</div>
+</header>
+
+<div class="warn-banner">
+  <strong>⚠ Antes de leer:</strong> el <code>README.md</code> raíz del repo está desactualizado (menciona Fastify, Photon Fusion 2, Unity XR Toolkit y Upstash Redis — ninguno existe en el código actual). Este documento ignora el README y describe <strong>solo lo que el código realmente hace hoy</strong>: Node.js + Express (ESM), <code>ws</code> (WebSocket nativo), Liveblocks, LiveKit y Supabase. Ver la pestaña <strong>"Preguntas abiertas"</strong> para todo lo que no pude confirmar sin adivinar.
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="arch" class="active">1. Arquitectura</button>
+  <button data-tab="auth">2. Auth &amp; roomToken</button>
+  <button data-tab="ws">3. WebSocket bridge</button>
+  <button data-tab="spatial">4. Spatial Objects</button>
+  <button data-tab="voice">5. Voz (LiveKit)</button>
+  <button data-tab="webgl">6. Restricciones WebGL</button>
+  <button data-tab="checklist">7. Checklist testing</button>
+  <button data-tab="ref">8. Referencia rápida</button>
+  <button data-tab="gaps">⚠ Preguntas abiertas</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════ 1. ARQUITECTURA ══════════════════════════════ -->
+<section class="panel active" id="arch">
+  <h2>1. Arquitectura general</h2>
+  <p>Monorepo con 3 clientes/servicios conectados a un único backend Express:</p>
+
+  <div class="flow">
+    <div class="step">🖥️ <b>Web client</b><br><span class="src">React + Vite + TS + Zustand + R3F/Three.js — Vercel</span></div>
+    <div class="arrow">⇄ HTTPS/WSS</div>
+    <div class="step">🟢 <b>Unity WebGL</b><br><span class="src">Build exportado a navegador — mismo sandbox que el web client</span></div>
+  </div>
+  <div class="flow">
+    <div class="step">⬇ ambos clientes</div>
+  </div>
+  <div class="flow">
+    <div class="step" style="border-color:var(--blue-dim)">🔵 <b>Backend (Railway)</b><br><span class="src">Node.js + Express (ESM), <code>src/index.js</code></span></div>
+  </div>
+  <div class="flow">
+    <div class="step">→ <b>Supabase</b><br><span class="src">Postgres + Auth</span></div>
+    <div class="step">→ <b>Liveblocks</b><br><span class="src">Presence + Storage CRDT (pizarrón)</span></div>
+    <div class="step">→ <b>LiveKit</b><br><span class="src">Voz WebRTC</span></div>
+  </div>
+
+  <h3>Piezas del backend relevantes para Unity</h3>
+  <table>
+    <tr><th>Pieza</th><th>Qué hace</th><th>Archivo real</th></tr>
+    <tr><td>API REST</td><td>Auth, rooms, spatial-objects, livekit, liveblocks/auth</td><td><code>backend/src/routes/*.js</code></td></tr>
+    <tr><td>WebSocket bridge</td><td>Servidor <code>ws</code> nativo montado sobre el mismo servidor HTTP. Relay genérico de mensajes + forward a Liveblocks</td><td><code>backend/src/services/wsService.js</code></td></tr>
+    <tr><td>Base de datos</td><td>Supabase Postgres: <code>rooms</code>, <code>room_members</code>, <code>spatial_objects</code>, <code>sessions</code></td><td><code>backend/supabase/migrations/20260602210645_new-migration.sql</code></td></tr>
+    <tr><td>Sync tiempo real (web)</td><td>Liveblocks Presence (cursor, avatar, status) + Storage CRDT (trazos de pizarrón, índice de objetos)</td><td><code>web-client/src/lib/liveblocks.ts</code></td></tr>
+    <tr><td>Voz</td><td>LiveKit Cloud, tokens firmados server-side</td><td><code>backend/src/services/livekitService.js</code></td></tr>
+  </table>
+
+  <div class="card gap">
+    <h4>⚠ Dato importante que no estaba en tu enumeración</h4>
+    <p>El <b>web client actual NO usa el WebSocket bridge (<code>wsService.js</code>)</b>. Todo su tiempo real (presencia, cursores, pizarrón CRDT) pasa por el SDK de cliente de Liveblocks (<code>@liveblocks/client</code> + <code>@liveblocks/react</code>), autenticado contra <code>POST /api/liveblocks/auth</code>. El WebSocket crudo en <code>wsService.js</code> hoy <b>no tiene ningún consumidor</b> en el código — parece pensado específicamente como el puente para Unity, pero aún no está siendo usado por nadie ni tiene un contrato de mensajes definido más allá de un relay genérico. Ver sección 3 y "Preguntas abiertas".</p>
+  </div>
+
+  <h3>Dónde entra Unity WebGL</h3>
+  <p>Unity WebGL corre <b>dentro del navegador</b>, en el mismo origen/sandbox que el web client. Tiene dos caminos posibles para hablar con el resto del sistema (ambos ya existen en el backend, pero solo uno tiene forma de "protocolo" definida hoy):</p>
+  <ol>
+    <li><b>REST + <code>x-room-token</code></b> — igual que el web client: login con Supabase, <code>POST /api/rooms/:id/join</code>, y de ahí usar el <code>roomToken</code> para crear/mover/borrar objetos espaciales y pedir token de voz.</li>
+    <li><b>WebSocket bridge (<code>ws://.../?token=...&amp;room_id=...&amp;user_id=...</code>)</b> — conexión directa al servidor <code>ws</code> del backend, que reenvía mensajes a otros clientes conectados a la misma sala y los reenvía también como evento de Liveblocks (<code>broadcastEvent</code>, no Presence/Storage).</li>
+  </ol>
+</section>
+
+<!-- ══════════════════════════════ 2. AUTH ══════════════════════════════ -->
+<section class="panel" id="auth">
+  <h2>2. Auth y <code>roomToken</code></h2>
+
+  <h3>Flujo completo</h3>
+  <div class="flow">
+    <div class="step">1. <code>POST /api/auth/login</code><br><span class="src">Supabase Auth → <code>access_token</code></span></div>
+    <div class="arrow">→</div>
+    <div class="step">2. <code>POST /api/rooms/:id/join</code><br><span class="src">Header <code>Authorization: Bearer &lt;access_token&gt;</code></span></div>
+    <div class="arrow">→</div>
+    <div class="step">3. Backend devuelve <code>roomToken</code><br><span class="src">JWT propio, firmado con <code>JWT_SECRET</code></span></div>
+    <div class="arrow">→</div>
+    <div class="step">4. Header <code>x-room-token</code><br><span class="src">en cada request que requiera rol</span></div>
+  </div>
+
+  <h4>1) Login (Supabase)</h4>
+  <pre><code>POST /api/auth/login
+Content-Type: application/json
+
+{ "email": "usuaria@example.com", "password": "unaPasswordSegura123" }
+
+→ 200
+{
+  "ok": true,
+  "data": {
+    "user": { "id": "b3f1...", "email": "usuaria@example.com" },
+    "session": { "access_token": "eyJ...", "refresh_token": "..." }
+  }
+}</code></pre>
+  <div class="src">Fuente: <code>backend/src/routes/auth.js</code> (anotación @swagger de <code>/api/auth/login</code>). El <code>access_token</code> es un JWT de Supabase (opaco desde el punto de vista del cliente) — <b>no</b> es el <code>roomToken</code> custom del punto siguiente.</div>
+
+  <h4>2) Unirse a una sala</h4>
+  <pre><code>POST /api/rooms/:id/join
+Authorization: Bearer &lt;access_token&gt;
+
+→ 200 (sala pública, primera vez)
+{
+  "ok": true,
+  "data": {
+    "joined": true,
+    "room": { "id": "8a1e...-room", "max_users": 16, "is_public": true },
+    "roomToken": "eyJhbGciOiJIUzI1NiIs..."
+  }
+}</code></pre>
+  <div class="src">Fuente: <code>backend/src/routes/rooms.js</code> (ruta <code>/api/rooms/{id}/join</code>) + <code>backend/src/services/roomService.js</code> (<code>joinRoom</code>).</div>
+
+  <div class="card">
+    <h4>Reglas reales de asignación de rol en <code>joinRoom</code></h4>
+    <ul>
+      <li>Al <b>crear</b> una sala, el creador queda con rol <code class="role-owner">owner</code> en <code>room_members</code> (<code>createRoom</code>).</li>
+      <li>Si la sala es <b>pública</b> y el usuario no era miembro: se le asigna <code class="role-editor">editor</code> automáticamente (hardcodeado — no hay lógica de "viewer por defecto").</li>
+      <li>Si la sala es <b>privada</b>: el usuario debe <b>ya existir</b> como fila en <code>room_members</code> (invitado previamente); si no, <code>403</code>. Si existe, se reusa su <code>role</code> actual tal cual está en la BD.</li>
+      <li>Rate limit: <code>authLimiter</code> — 10 requests por IP cada 15 min (mismo limiter que login/register).</li>
+    </ul>
+  </div>
+
+  <h4>Estructura EXACTA del JWT <code>roomToken</code></h4>
+  <pre><code>// Payload real (jwt.sign), backend/src/services/roomService.js líneas 222-226 y 259-263
+{
+  "sub": "b3f1e2a0-....",     // user.id de Supabase
+  "room_id": "8a1e....-room", // UUID de la sala
+  "role": "editor",           // "owner" | "editor" | "viewer"
+  "iat": 1751000000,
+  "exp": 1751028800           // 8 horas (expiresIn: '8h')
+}
+// Firmado HS256 con process.env.JWT_SECRET</code></pre>
+
+  <h4>Cómo se valida en cada request (backend)</h4>
+  <pre><code>// backend/src/middleware/auth.js — dentro de requireAuth
+const roomToken = req.headers['x-room-token']
+if (roomToken) {
+  const decoded = jwt.verify(roomToken, process.env.JWT_SECRET)
+  if (decoded.sub === req.user.id) {   // debe coincidir con el Bearer token
+    req.user.role = decoded.role
+    req.user.room_id = decoded.room_id
+  }
+}
+// backend/src/middleware/authorize.js — requireRole(minRole)
+const ROLE_RANK = { owner: 3, editor: 2, viewer: 1 }
+// pasa si ROLE_RANK[currentRole] >= ROLE_RANK[minRole]</code></pre>
+  <div class="src">Fuente: <code>backend/src/middleware/auth.js</code>, <code>backend/src/middleware/authorize.js</code>.</div>
+
+  <h3>Qué debe validar/bloquear Unity WebGL según el rol</h3>
+  <table>
+    <tr><th>Acción</th><th>Rol mínimo</th><th>Enforced en backend</th></tr>
+    <tr><td>Ver sala / listar objetos espaciales</td><td class="role-viewer">viewer</td><td>Sí — cualquier miembro</td></tr>
+    <tr><td>Crear objeto espacial</td><td class="role-editor">editor</td><td>Sí — <code>requireRole('editor')</code> en <code>POST /api/spatial-objects</code></td></tr>
+    <tr><td>Mover/actualizar objeto espacial</td><td class="role-editor">editor</td><td>Sí, <b>+ regla extra</b>: solo el <code>created_by</code> del objeto o el <code>owner</code> de la sala pueden moverlo (ver sección 4)</td></tr>
+    <tr><td>Borrar objeto espacial</td><td class="role-editor">editor</td><td>Igual que mover</td></tr>
+    <tr><td>Borrar la sala</td><td class="role-owner">owner</td><td>Sí — <code>requireRole('owner')</code></td></tr>
+    <tr><td>Publicar audio (LiveKit)</td><td class="role-editor">editor</td><td>Sí — <code>can_publish</code> viene calculado del backend, ver sección 5</td></tr>
+    <tr><td>Crear snapshot manual</td><td class="role-editor">editor</td><td>Sí</td></tr>
+  </table>
+  <p><b>Recomendación para Unity:</b> aunque el backend ya rechaza con <code>403</code> las acciones sin permiso, la UI de Unity debería ocultar/deshabilitar los controles de edición cuando <code>role === "viewer"</code> (leer el <code>role</code> del payload del <code>roomToken</code> decodificado client-side, sin necesidad de verificar la firma) para no depender solo del rechazo del servidor.</p>
+</section>
+
+<!-- ══════════════════════════════ 3. WEBSOCKET BRIDGE ══════════════════════════════ -->
+<section class="panel" id="ws">
+  <h2>3. Protocolo del WebSocket bridge</h2>
+
+  <div class="card gap">
+    <h4>⚠ Léeme primero</h4>
+    <p>Extraje esto línea por línea de <code>backend/src/services/wsService.js</code>. Hoy es un <b>relay genérico</b>: no existe una lista cerrada de tipos de mensaje (<code>join</code>, <code>move</code>, <code>spatial-object-update</code>, etc. <b>no están implementados</b> como tipos especiales en el código — el servidor no los interpreta, solo los reenvía). El único mensaje con formato fijo que emite el servidor es <code>CONNECTED</code>. Todo lo demás (qué <code>type</code> usar para mover un avatar, sincronizar transform, etc.) es un contrato que <b>todavía hay que diseñar entre Unity y backend</b>. Ver "Preguntas abiertas".</p>
+  </div>
+
+  <h3>Conexión</h3>
+  <pre><code>// URL de conexión (query params leídos en wsService.js)
+wss://&lt;backend-host&gt;/?token=&lt;roomToken_o_access_token&gt;&room_id=&lt;uuid&gt;&user_id=&lt;uuid&gt;
+
+// En local:
+ws://localhost:3000/?token=eyJ...&room_id=8a1e...-room&user_id=b3f1...</code></pre>
+
+  <div class="card gap">
+    <h4>⚠ El servidor NO valida el JWT en la conexión WS</h4>
+    <p>Código real:</p>
+    <pre><code>// backend/src/services/wsService.js
+if (!token || !roomId) {
+  ws.close(1008, 'token y room_id requeridos')
+  return
+}</code></pre>
+    <p>Solo verifica que <code>token</code> y <code>room_id</code> existan (no vacíos) — <b>nunca llama a <code>jwt.verify</code></b> sobre ese token, a diferencia de las rutas REST. Cualquier string no vacío pasa. Esto es una brecha de seguridad real del código actual, no una suposición mía — avisale a Diego antes de que Felipe construya lógica de confianza sobre esta conexión.</p>
+  </div>
+
+  <h3>Mensaje que el servidor SÍ envía siempre al conectar</h3>
+  <pre><code>// Enviado por el servidor apenas se acepta la conexión
+{ "type": "CONNECTED", "data": { "roomId": "8a1e...-room" } }</code></pre>
+
+  <h3>Formato de mensajes cliente → servidor</h3>
+  <p>Cualquier mensaje enviado por un cliente debe ser JSON con esta forma (es lo único que el servidor espera para poder reenviarlo):</p>
+  <pre><code>{ "type": "&lt;string libre&gt;", "data": { /* cualquier objeto */ } }</code></pre>
+
+  <h3>Qué hace el servidor con cada mensaje recibido</h3>
+  <pre><code>// backend/src/services/wsService.js — ws.on('message', ...)
+ws.on('message', async (raw) => {
+  const { type, data } = JSON.parse(raw.toString())
+
+  // 1) Reenvía el mensaje como "room event" de Liveblocks (broadcastEvent)
+  //    Esto NO toca Presence ni Storage — es un canal de eventos efímero aparte.
+  await liveblocks.broadcastEvent(roomId, { type, data })
+
+  // 2) Reenvía el mensaje TAL CUAL a los demás clientes WS conectados
+  //    a la misma room_id (excepto al que lo mandó)
+  broadcastToRoom(roomId, message, ws)
+})</code></pre>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>Al desconectarse</h4>
+      <p>No se emite ningún mensaje explícito de "disconnect" a los demás clientes. El servidor solo:</p>
+      <ul>
+        <li>Quita al socket del <code>Set</code> de la sala</li>
+        <li>Registra un evento <code>leave</code> en Supabase vía <code>trackEvent(roomId, userId, 'leave', { duration_seconds })</code> (tabla de eventos de sesión)</li>
+      </ul>
+      <p>Si Unity necesita saber cuándo otro peer se desconectó, hoy <b>no hay un evento dedicado</b> — tendría que inferirse (ej. por timeout de "heartbeat" propio, ya que tampoco hay ping/pong de aplicación implementado).</p>
+    </div>
+    <div class="card">
+      <h4>Relación con Liveblocks</h4>
+      <p><code>broadcastEvent</code> despacha a los listeners de <code>useBroadcastEvent</code>/<code>useEventListener</code> del SDK de Liveblocks — pero <b>el web-client actual no tiene ningún listener registrado</b> (no aparece <code>useEventListener</code> ni <code>useBroadcastEvent</code> en <code>web-client/src</code>). Es decir: hoy, lo que Unity mande por el WS bridge <b>no llega visualmente a nadie</b> hasta que alguien (Diego o Felipe) agregue un listener en el web client o en Unity mismo del lado receptor.</p>
+    </div>
+  </div>
+
+  <h3>Ejemplo de sesión (formato válido, no un tipo "oficial")</h3>
+  <pre><code>// Cliente Unity → servidor (ejemplo de payload que SÍ pasaría por el relay,
+// pero el "type" y las claves de "data" son una propuesta a validar con Diego)
+{
+  "type": "avatar-transform",
+  "data": {
+    "user_id": "b3f1e2a0-....",
+    "position": { "x": 1.2, "y": 0.0, "z": -3.4 },
+    "rotation": { "x": 0, "y": 0.7, "z": 0, "w": 0.7 }
+  }
+}</code></pre>
+
+  <h3>Rooms/estado en memoria</h3>
+  <p>El servidor mantiene un <code>Map&lt;roomId, Set&lt;WebSocket&gt;&gt;</code> en memoria de proceso (variable <code>rooms</code>) — no persiste en Redis ni Supabase. Si el backend reinicia (deploy en Railway) o corre en más de una instancia, las conexiones activas se pierden/no se comparten entre instancias. Importante para diseñar la reconexión en Unity (sección 7).</p>
+</section>
+
+<!-- ══════════════════════════════ 4. SPATIAL OBJECTS ══════════════════════════════ -->
+<section class="panel" id="spatial">
+  <h2>4. API de Spatial Objects</h2>
+
+  <h3>Schema real de la tabla</h3>
+  <pre><code>-- backend/supabase/migrations/20260602210645_new-migration.sql
+CREATE TABLE spatial_objects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+  type TEXT CHECK (type IN ('whiteboard', 'file', 'note', 'model')),
+  position JSONB DEFAULT '{"x":0,"y":0,"z":0}',
+  rotation JSONB DEFAULT '{"x":0,"y":0,"z":0,"w":1}',  -- cuaternión (x,y,z,w)
+  scale JSONB DEFAULT '{"x":1,"y":1,"z":1}',
+  content_url TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);</code></pre>
+
+  <div class="card gap">
+    <h4>⚠ Discrepancia: valores válidos de <code>type</code></h4>
+    <p>El constraint SQL solo permite <code>'whiteboard' | 'file' | 'note' | 'model'</code>. Sin embargo, el ejemplo en la documentación Swagger (<code>backend/src/routes/spatialObjects.js</code>) usa <code>"model3d"</code>, que <b>violaría el CHECK y la BD rechazaría el insert</b>. Para Unity: usar siempre <code>"model"</code> (no <code>"model3d"</code>) hasta que Diego confirme/actualice el constraint.</p>
+  </div>
+
+  <div class="card gap">
+    <h4>⚠ No existen tests de spatialObjects en el repo</h4>
+    <p>Busqué <code>spatialObjects.test.js</code> en todo el repo y no existe (solo hay tests para <code>rooms</code>, <code>authorize</code>, <code>sessionEventService</code> y <code>snapshotService</code>). Los ejemplos de payload de esta sección salen directamente de las anotaciones <code>@swagger</code> en <code>backend/src/routes/spatialObjects.js</code> y de la lógica real en <code>backend/src/services/spatialObjectService.js</code>, no de tests.</p>
+  </div>
+
+  <h3>Endpoints</h3>
+  <table>
+    <tr><th>Método</th><th>Ruta</th><th>Rol mínimo</th><th>Regla extra</th></tr>
+    <tr><td>GET</td><td><code>/api/spatial-objects?room_id=&lt;uuid&gt;</code></td><td class="role-viewer">miembro (cualquier rol)</td><td>—</td></tr>
+    <tr><td>POST</td><td><code>/api/spatial-objects</code></td><td class="role-editor">editor</td><td>—</td></tr>
+    <tr><td>PATCH</td><td><code>/api/spatial-objects/:id</code></td><td class="role-editor">editor</td><td>Además debe ser <code>created_by === user.id</code> <b>o</b> el <code>role</code> de sala <code class="role-owner">owner</code></td></tr>
+    <tr><td>DELETE</td><td><code>/api/spatial-objects/:id</code></td><td class="role-editor">editor</td><td>Misma regla extra que PATCH</td></tr>
+  </table>
+  <div class="src">Fuente: <code>backend/src/routes/spatialObjects.js</code> + <code>backend/src/services/spatialObjectService.js</code> (<code>updateSpatialObject</code>, <code>deleteSpatialObject</code>).</div>
+
+  <div class="card gap">
+    <h4>⚠ Importante para el checklist de roles</h4>
+    <p>Un <code class="role-editor">editor</code> que <b>no creó</b> un objeto y <b>no es owner</b> de la sala recibe <code>403</code> al intentar moverlo o borrarlo, aunque su rol nominalmente alcance para "editor". No es solo "viewer no puede mover objetos" — es más granular: "solo el creador del objeto (o el owner de la sala) puede moverlo/borrarlo, sin importar si sos editor".</p>
+  </div>
+
+  <h4>Crear objeto — request/response real</h4>
+  <pre><code>POST /api/spatial-objects
+Authorization: Bearer &lt;access_token&gt;
+x-room-token: &lt;roomToken&gt;
+Content-Type: application/json
+
+{
+  "room_id": "8a1e...-room",
+  "type": "model",
+  "position": { "x": 0, "y": 1, "z": 0 },
+  "rotation": { "x": 0, "y": 0, "z": 0, "w": 1 },
+  "scale": { "x": 1, "y": 1, "z": 1 },
+  "content_url": "https://.../modelo.glb",
+  "metadata": {}
+}
+
+→ 201
+{ "ok": true, "data": { "id": "obj-1", "room_id": "8a1e...-room", "type": "model", "...": "..." } }</code></pre>
+
+  <h4>Mover un objeto (lo que hace Unity cuando alguien lo arrastra)</h4>
+  <pre><code>PATCH /api/spatial-objects/:id
+Authorization: Bearer &lt;access_token&gt;
+x-room-token: &lt;roomToken&gt;
+Content-Type: application/json
+
+{ "position": { "x": 1, "y": 1, "z": 0 } }
+
+→ 200
+{ "ok": true, "data": { "id": "obj-1", "position": { "x": 1, "y": 1, "z": 0 } } }</code></pre>
+
+  <h4>Errores de permisos típicos</h4>
+  <pre><code>// viewer intentando crear/mover
+403 { "ok": false, "error": "Sin permisos para esta acción" }
+
+// role insuficiente detectado por requireRole
+403 { "ok": false, "error": "Rol insuficiente para esta acción", "required": "editor", "current": "viewer" }
+
+// editor que no es dueño del objeto ni owner de sala
+403 { "ok": false, "error": "Sin permisos para mover este objeto" }</code></pre>
+  <div class="src">Fuente: <code>backend/src/services/spatialObjectService.js</code>, <code>backend/src/middleware/authorize.js</code>, <code>backend/src/lib/response.js</code>.</div>
+</section>
+
+<!-- ══════════════════════════════ 5. VOZ (LIVEKIT) ══════════════════════════════ -->
+<section class="panel" id="voice">
+  <h2>5. Voz (LiveKit)</h2>
+
+  <h3>Obtener token de voz</h3>
+  <pre><code>GET /api/livekit/token?room_id=&lt;uuid&gt;
+Authorization: Bearer &lt;access_token&gt;
+
+→ 200
+{
+  "ok": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "url": "wss://tu-livekit.livekit.cloud",
+    "room_id": "8a1e...-room",
+    "identity": "b3f1...",       // = user.id de Supabase
+    "can_publish": true          // false si el rol es "viewer"
+  }
+}</code></pre>
+  <div class="src">Fuente: <code>backend/src/routes/livekit.js</code>.</div>
+
+  <h3>Cómo se calcula el rol y los permisos</h3>
+  <pre><code>// backend/src/routes/livekit.js
+// 1) Busca room_members.role para (room_id, user.id)
+// 2) Si no hay fila, fallback: si rooms.owner_id === user.id → role = "owner"
+// 3) Si sigue sin rol → 403 "No eres miembro de esta sala"
+
+// backend/src/services/livekitService.js
+const canPublish = role === 'owner' || role === 'editor'
+at.addGrant({
+  room: roomId,
+  roomJoin: true,
+  canPublish,
+  canSubscribe: true,
+  canPublishData: true,   // canal de datos de LiveKit habilitado para todos
+})
+// ttl del JWT: 1h — el cliente debe re-pedir token si la sesión dura más</code></pre>
+
+  <table>
+    <tr><th>Rol</th><th>canPublish</th><th>canSubscribe</th><th>canPublishData</th></tr>
+    <tr><td class="role-owner">owner</td><td class="yes">sí</td><td class="yes">sí</td><td class="yes">sí</td></tr>
+    <tr><td class="role-editor">editor</td><td class="yes">sí</td><td class="yes">sí</td><td class="yes">sí</td></tr>
+    <tr><td class="role-viewer">viewer</td><td class="no">no (solo escucha)</td><td class="yes">sí</td><td class="yes">sí</td></tr>
+  </table>
+
+  <h3>SDK para Unity</h3>
+  <p>Usar el <a href="https://github.com/livekit/client-sdk-unity" target="_blank">LiveKit Unity SDK</a> oficial. Conectarse con la <code>url</code> y el <code>token</code> devueltos por el endpoint de arriba — no generar tokens en el cliente, el <code>LIVEKIT_API_SECRET</code> nunca sale del backend (comentario explícito en <code>livekitService.js</code>).</p>
+  <div class="card gap">
+    <h4>⚠ Verificar compatibilidad WebGL</h4>
+    <p>No encontré en el repo ninguna integración existente de LiveKit dentro de Unity (la carpeta <code>unity-client/</code> tiene solo el proyecto Unity default, sin scripts propios). El LiveKit Unity SDK usa WebRTC nativo (libwebrtc) — su soporte en el build target <b>WebGL</b> es limitado/depende de bindings JS específicos. Esto hay que validarlo con Felipe como parte del spike inicial, no asumir que "funciona igual" que en build nativo.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 6. RESTRICCIONES WEBGL ══════════════════════════════ -->
+<section class="panel" id="webgl">
+  <h2>6. Restricciones de WebGL <span class="badge red">crítico</span></h2>
+  <p>Un build de Unity exportado a WebGL corre <b>dentro del navegador</b>, en el mismo sandbox de JavaScript que el web client de React. Esto tiene consecuencias directas:</p>
+
+  <div class="grid2">
+    <div class="card ok">
+      <h4>✅ Funciona igual que en el web client</h4>
+      <ul>
+        <li>Todas las llamadas REST (<code>fetch</code>/<code>UnityWebRequest</code>) — sujetas al mismo <code>ALLOWED_ORIGINS</code> (CORS) configurado en <code>backend/src/index.js</code></li>
+        <li>El WebSocket bridge (<code>ws://</code>/<code>wss://</code>) — se conecta al mismo host/puerto que el backend</li>
+        <li>LocalStorage / sessionStorage del navegador (para guardar <code>access_token</code>/<code>roomToken</code>, igual que hace <code>web-client/src/stores/authStore.ts</code>)</li>
+        <li>WebRTC (LiveKit) vía los bindings JS del navegador</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>❌ NO disponible en WebGL (solo build nativo)</h4>
+      <ul>
+        <li>Acceso a filesystem nativo del dispositivo</li>
+        <li>APIs nativas de Meta Quest (OpenXR nativo, Passthrough API, hand-tracking nativo, plugins Android/Oculus)</li>
+        <li>Sockets TCP/UDP crudos (Unity WebGL compila los sockets a WebSocket vía Emscripten — no hay UDP real)</li>
+        <li>Multithreading nativo completo (WebGL usa Web Workers con limitaciones)</li>
+        <li>Cualquier plugin nativo (.so/.aar/.dll) sin build especial para WebAssembly</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card gap">
+    <h4>⚠ Sobre CORS/ALLOWED_ORIGINS y el WebSocket bridge — corrección importante</h4>
+    <p>Revisé el código real: <code>cors()</code> con el allow-list de <code>ALLOWED_ORIGINS</code> (<code>backend/src/index.js</code>) se aplica <b>solo a las rutas Express (HTTP)</b>. El servidor <code>WebSocketServer</code> de <code>wsService.js</code> está montado sobre el mismo servidor HTTP pero <b>no verifica el header <code>Origin</code> en el handshake</b> — no hay ningún chequeo de origen en ese archivo. Es decir: para las rutas REST, si el build WebGL corre en un dominio no listado en <code>ALLOWED_ORIGINS</code>, el navegador bloqueará la respuesta (falla real de CORS). Para el WebSocket bridge, hoy <b>no hay ese bloqueo</b> — cualquier origen puede conectarse. No asumas que ambos tienen la misma protección; para el REST sí hay que estar en <code>ALLOWED_ORIGINS</code>, para el WS bridge no hay enforcement todavía (ver "Preguntas abiertas").</p>
+  </div>
+
+  <h3>Qué SÍ funciona en WebGL vs qué es exclusivo del visor físico</h3>
+  <table>
+    <tr><th>Feature</th><th>WebGL (navegador Quest/desktop)</th><th>Build nativo (APK Quest)</th></tr>
+    <tr><td>Renderizado 3D de la sala</td><td class="yes">sí</td><td class="yes">sí</td></tr>
+    <tr><td>REST API (auth, rooms, spatial-objects)</td><td class="yes">sí</td><td class="yes">sí</td></tr>
+    <tr><td>WebSocket bridge</td><td class="yes">sí (mismo protocolo)</td><td class="yes">sí</td></tr>
+    <tr><td>Voz LiveKit</td><td class="yes" style="color:var(--yellow)">probablemente, a validar</td><td class="yes">sí</td></tr>
+    <tr><td>Stereo rendering / head tracking real (XR)</td><td>solo si se exporta con soporte WebXR + navegador compatible</td><td class="yes">sí, nativo</td></tr>
+    <tr><td>Hand tracking / controllers Quest nativos</td><td class="no">no</td><td class="yes">sí</td></tr>
+    <tr><td>Passthrough (mixed reality)</td><td class="no">no</td><td class="yes">sí</td></tr>
+    <tr><td>Acceso a filesystem del dispositivo</td><td class="no">no (sandbox de navegador)</td><td class="yes">sí</td></tr>
+  </table>
+
+  <div class="card gap">
+    <h4>⚠ Pregunta de arquitectura sin responder en el código</h4>
+    <p>No hay nada en el repo que indique si el build WebGL de Felipe usará el <b>WebXR Export</b> de Unity (para que funcione en modo VR estéreo dentro del navegador de Meta Quest) o si es un build WebGL "plano" (mouse/teclado, sin XR, pensado para desktop). Esto cambia bastante el checklist de testing — confirmar con Diego/Felipe cuál es el objetivo antes de fijar el checklist final.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ 7. CHECKLIST ══════════════════════════════ -->
+<section class="panel" id="checklist">
+  <h2>7. Checklist de testing accionable para Felipe</h2>
+
+  <h3>Roles y permisos</h3>
+  <ul class="checklist">
+    <li><span class="box"></span>Con rol <code class="role-viewer">viewer</code>: intentar <code>POST /api/spatial-objects</code> → debe devolver <code>403</code>, y la UI de Unity no debería ni mostrar el control de "crear objeto".</li>
+    <li><span class="box"></span>Con rol <code class="role-viewer">viewer</code>: intentar <code>PATCH /api/spatial-objects/:id</code> (mover) → <code>403</code>.</li>
+    <li><span class="box"></span>Con rol <code class="role-editor">editor</code> que <b>no creó</b> el objeto: intentar moverlo → <code>403 "Sin permisos para mover este objeto"</code> (regla de <code>created_by</code>, no solo de rol).</li>
+    <li><span class="box"></span>Con rol <code class="role-owner">owner</code>: mover/borrar cualquier objeto de la sala, incluso creado por otro usuario → debe funcionar.</li>
+    <li><span class="box"></span>Con rol <code class="role-viewer">viewer</code> en LiveKit: verificar que <code>can_publish: false</code> y que el SDK bloquea la publicación de audio (mute forzado), pero sí puede escuchar a otros.</li>
+    <li><span class="box"></span>Intentar <code>DELETE /api/rooms/:id</code> sin ser <code class="role-owner">owner</code> → <code>403</code>.</li>
+  </ul>
+
+  <h3>WebSocket bridge / reconexión</h3>
+  <ul class="checklist">
+    <li><span class="box"></span>Conectar sin <code>token</code> o sin <code>room_id</code> en la query string → el servidor cierra la conexión con código <code>1008</code>.</li>
+    <li><span class="box"></span>Verificar que al conectar se recibe <code>{"type":"CONNECTED","data":{"roomId":...}}</code> antes de enviar cualquier mensaje propio.</li>
+    <li><span class="box"></span>Matar la conexión de red (simular pérdida de wifi en Quest) y confirmar que Unity <b>reintenta la conexión</b> — hoy el backend no tiene keep-alive/heartbeat de aplicación, así que la lógica de reconexión debe implementarse 100% del lado de Unity (con backoff, ej. reintentos cada 2s/4s/8s).</li>
+    <li><span class="box"></span>Reconectar y confirmar que Unity vuelve a estar en el <code>Set</code> de la sala (nuevo <code>ws.on('connection')</code>, nuevo evento <code>join</code> registrado en <code>session_events</code>).</li>
+    <li><span class="box"></span>Enviar un mensaje con JSON malformado → confirmar que el servidor lo loguea como error (<code>[WS] Error procesando mensaje</code>) y <b>no</b> cierra la conexión (comportamiento actual: solo hace <code>catch</code> y sigue).</li>
+  </ul>
+
+  <h3>Sincronización en tiempo real entre dos clientes</h3>
+  <ul class="checklist">
+    <li><span class="box"></span>Dos instancias de Unity WebGL conectadas a la misma <code>room_id</code>: un mensaje enviado por una debe llegar a la otra vía <code>broadcastToRoom</code> (verificar latencia percibida).</li>
+    <li><span class="box"></span>Confirmar si el web client (React) necesita ver esos mismos eventos — si es así, hay que agregar un listener de Liveblocks (<code>useEventListener</code>) del lado web, porque hoy no existe (ver sección 3 y "Preguntas abiertas").</li>
+    <li><span class="box"></span>Crear un objeto espacial desde Unity (REST) y confirmar que aparece en <code>GET /api/spatial-objects?room_id=...</code> consultado desde el web client (o Postman) — esto valida la fuente de verdad compartida (Supabase), independientemente del WS bridge.</li>
+    <li><span class="box"></span>Mover un objeto desde Unity y, en paralelo, intentar moverlo desde otro cliente sin ser su creador/owner → debe fallar para el segundo cliente (last-write-wins solo aplica entre quienes tienen permiso).</li>
+  </ul>
+
+  <h3>CORS / sandbox WebGL</h3>
+  <ul class="checklist">
+    <li><span class="box"></span>Servir el build WebGL desde un origen <b>no incluido</b> en <code>ALLOWED_ORIGINS</code> y confirmar que las llamadas REST fallan por CORS (esto es esperado, no un bug).</li>
+    <li><span class="box"></span>Agregar el origen real donde se hostee el build de prueba a <code>ALLOWED_ORIGINS</code> en Railway antes de testear (pedir a Diego).</li>
+    <li><span class="box"></span>Confirmar que el WebSocket bridge conecta igual sin importar el <code>Origin</code> (comportamiento actual, ver sección 6 — a revisar si se quiere restringir).</li>
+  </ul>
+
+  <h3>Expiración de tokens</h3>
+  <ul class="checklist">
+    <li><span class="box"></span><code>roomToken</code> expira a las 8h — probar una request con un token vencido y confirmar el manejo de error en Unity (debería re-llamar a <code>join</code>).</li>
+    <li><span class="box"></span>Token de LiveKit expira al 1h (<code>ttl: '1h'</code>) — confirmar que Unity vuelve a pedir <code>GET /api/livekit/token</code> antes de que expire o al reconectar.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════ 8. REFERENCIA RÁPIDA ══════════════════════════════ -->
+<section class="panel" id="ref">
+  <h2>8. Referencia rápida</h2>
+
+  <h3>URLs</h3>
+  <table>
+    <tr><th>Entorno</th><th>Backend</th><th>Web client</th></tr>
+    <tr><td>Local</td><td><code>http://localhost:3000</code></td><td><code>http://localhost:5173</code></td></tr>
+    <tr><td>Producción</td><td><code>https://xr-workspace-production-1728.up.railway.app/</code></td><td>Vercel (dominio no fijado en el repo)</td></tr>
+  </table>
+  <div class="src">Fuente: <code>backend/DEPLOYMENT.md</code>. La URL de Vercel del web client no está documentada en ningún <code>.md</code> del repo — pedir a Diego.</div>
+
+  <h3>Health check</h3>
+  <pre><code>GET /health
+
+→ 200
+{ "ok": true, "service": "xr-rooms-backend", "env": "production", "ts": "2026-07-06T..." }</code></pre>
+
+  <h3>Documentación completa (Swagger)</h3>
+  <p><code>GET /api/docs</code> — sirve la UI interactiva de Swagger con <b>todos</b> los endpoints documentados (generada por <code>swagger-jsdoc</code> a partir de las anotaciones <code>@swagger</code> en <code>backend/src/routes/*.js</code>, ya trabajado en DGO-18). Úsalo como referencia de detalle para cualquier endpoint no cubierto en este documento (upload, summary/AI, snapshots, internal, metrics).</p>
+  <div class="card gap">
+    <h4>⚠ En producción requiere key</h4>
+    <p><code>docsGuard.js</code> exige <code>?key=&lt;DOCS_KEY&gt;</code> en producción (en desarrollo es libre). Pedirle el valor de <code>DOCS_KEY</code> a Diego si Felipe necesita ver el Swagger del ambiente de Railway.</p>
+  </div>
+
+  <h3>Variables de entorno relevantes (solo nombres, sin valores)</h3>
+  <table>
+    <tr><th>Variable</th><th>Para qué</th><th>Dónde se usa</th></tr>
+    <tr><td><code>ALLOWED_ORIGINS</code></td><td>Lista de orígenes permitidos por CORS (separados por coma)</td><td><code>backend/src/index.js</code></td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>Firma del <code>roomToken</code></td><td><code>backend/src/services/roomService.js</code>, <code>backend/src/middleware/auth.js</code></td></tr>
+    <tr><td><code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> / <code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Conexión a Supabase (Auth + Postgres)</td><td><code>backend/src/lib/supabase.js</code></td></tr>
+    <tr><td><code>LIVEBLOCKS_SECRET_KEY</code></td><td>Autorización de sesiones Liveblocks</td><td><code>backend/src/routes/liveblocks.js</code>, <code>wsService.js</code></td></tr>
+    <tr><td><code>LIVEKIT_API_KEY</code> / <code>LIVEKIT_API_SECRET</code> / <code>LIVEKIT_URL</code></td><td>Generación de tokens de voz</td><td><code>backend/src/services/livekitService.js</code></td></tr>
+    <tr><td><code>DOCS_KEY</code></td><td>Protege <code>/api/docs</code> en producción</td><td><code>backend/src/middleware/docsGuard.js</code></td></tr>
+    <tr><td><code>VITE_API_URL</code></td><td>URL del backend consumida por el web client (y debería usarla también Unity WebGL para no hardcodear)</td><td><code>web-client/.env.example</code></td></tr>
+  </table>
+  <div class="src">Fuente: <code>backend/.env.example</code>, <code>web-client/.env.example</code> y los imports de <code>process.env.*</code> en cada archivo citado.</div>
+
+  <h3>Headers que Unity debe enviar</h3>
+  <pre><code>Authorization: Bearer &lt;access_token de Supabase&gt;   // todas las rutas autenticadas
+x-room-token: &lt;roomToken JWT&gt;                        // rutas que requieren rol (editor/owner)
+Content-Type: application/json                          // en requests con body</code></pre>
+</section>
+
+<!-- ══════════════════════════════ GAPS ══════════════════════════════ -->
+<section class="panel" id="gaps">
+  <h2>⚠ Preguntas abiertas para Diego</h2>
+  <p>Todo lo de acá es información que <b>no pude confirmar leyendo el código</b> — decidí listarlo explícitamente en vez de inventar un ejemplo, tal como pediste.</p>
+
+  <div class="card gap">
+    <h4>1. Contrato de mensajes del WebSocket bridge</h4>
+    <p><code>wsService.js</code> es un relay 100% genérico. No existe ningún <code>type</code> de mensaje predefinido (ni <code>move</code>, ni <code>spatial-object-update</code>, ni <code>disconnect</code>) en el código actual — solo <code>CONNECTED</code> que emite el servidor. ¿Cuáles son los tipos de mensaje que Unity debería emitir para sincronizar avatares/transforms en tiempo real? ¿Ese contrato ya está definido en algún ticket de Linear/Jira/Notion que no esté en el repo?</p>
+  </div>
+
+  <div class="card gap">
+    <h4>2. Validación de identidad en el WebSocket bridge</h4>
+    <p>El servidor WS no verifica la firma del <code>token</code> recibido por query string, solo que no esté vacío. ¿Es intencional (MVP) o falta implementar <code>jwt.verify</code> ahí también antes de que Felipe construya sobre esto?</p>
+  </div>
+
+  <div class="card gap">
+    <h4>3. Cómo un usuario llega a ser "viewer"</h4>
+    <p>No encontré ningún endpoint para invitar usuarios a una sala privada asignándoles un rol específico, ni para cambiar el rol de un miembro existente (no hay <code>PATCH /api/rooms/:id/members/:userId</code> ni similar). <code>joinRoom</code> solo asigna <code>editor</code> (sala pública) o reutiliza un rol que ya debía existir de antes (sala privada). ¿Cómo se crea hoy una fila de <code>room_members</code> con rol <code>viewer</code>? ¿Es manual en Supabase, o falta ese endpoint?</p>
+  </div>
+
+  <div class="card gap">
+    <h4>4. Origen del build WebGL: ¿WebXR o build plano?</h4>
+    <p>No hay nada en el repo (ni en <code>unity-client/</code>, vacío salvo el template default de Unity) que indique si el objetivo es un build con <b>WebXR Export</b> (estéreo, en el navegador del visor Quest) o un build WebGL de escritorio sin soporte XR. Esto cambia el checklist de UX/testing de la sección 7.</p>
+  </div>
+
+  <div class="card gap">
+    <h4>5. Compatibilidad del LiveKit Unity SDK con el target WebGL</h4>
+    <p>El SDK de LiveKit para Unity usa WebRTC nativo; no hay evidencia en el repo de que ya se haya probado en un build WebGL. Hay que validarlo como spike técnico antes de comprometerlo en el checklist de voz.</p>
+  </div>
+
+  <div class="card gap">
+    <h4>6. <code>type</code> de objeto espacial <code>"model3d"</code> vs <code>"model"</code></h4>
+    <p>El ejemplo Swagger de <code>POST /api/spatial-objects</code> usa <code>"model3d"</code>, pero el <code>CHECK</code> constraint de la tabla solo permite <code>'whiteboard' | 'file' | 'note' | 'model'</code>. ¿Hay que actualizar el constraint SQL para agregar <code>model3d</code>, o corregir el ejemplo del Swagger?</p>
+  </div>
+
+  <div class="card gap">
+    <h4>7. URL de producción del web client</h4>
+    <p>Ningún <code>.md</code> del repo documenta el dominio de Vercel del web client (solo la URL de Railway del backend está en <code>DEPLOYMENT.md</code>). Necesario para que Felipe sepa qué agregar a <code>ALLOWED_ORIGINS</code> si va a probar la integración embebida ahí.</p>
+  </div>
+
+  <div class="card gap">
+    <h4>8. Multi-instancia del backend en Railway</h4>
+    <p>El estado de salas del WS bridge vive en memoria de proceso (<code>Map</code> en <code>wsService.js</code>). Si Railway llega a escalar el backend a más de una instancia, dos clientes en la "misma sala" podrían terminar en instancias distintas y nunca verse entre sí por WS (aunque sí compartirían estado vía Supabase/Liveblocks). ¿El plan de Railway actual garantiza una sola instancia?</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  XR Rooms Meet — Biblia de integración Unity WebGL. Generado a partir del código real del repo el 6 de julio de 2026. No reemplaza <code>GET /api/docs</code> (Swagger) para el detalle completo de cada endpoint.
+</footer>
+
+<script>
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('section.panel');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      window.scrollTo({top: 0, behavior:'smooth'});
+    });
+  });
+
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'copiar';
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(pre.innerText.replace('copiar','').trim()).then(() => {
+        btn.textContent = '✓ copiado';
+        setTimeout(() => btn.textContent = 'copiar', 1200);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>
+
+</body>
+</html>
