@@ -6,6 +6,7 @@ import * as roomService from '../services/roomService.js'
 import * as snapshotService from '../services/snapshotService.js'
 import * as sessionEventService from '../services/sessionEventService.js'
 import { ok, errors } from '../lib/response.js'
+import { authLimiter } from '../middleware/rateLimiter.js'
 
 const router = Router()
 
@@ -89,7 +90,7 @@ router.delete('/:id', requireRole('owner'), async (req, res, next) => {
  * Une al usuario autenticado a la sala.
  * Valida: sala existe, capacidad (max 16), sala pública/privada.
  */
-router.post('/:id/join', async (req, res, next) => {
+router.post('/:id/join', authLimiter, async (req, res, next) => {
   try {
     const result = await roomService.joinRoom(req.params.id, req.user.id)
     return ok(res, result)
