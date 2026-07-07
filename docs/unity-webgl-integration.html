@@ -256,7 +256,7 @@
 <body>
 
 <header>
-  <span class="badge blue">Backend · Diego</span><span class="badge green">Unity WebGL · Felipe</span>
+  <span class="badge blue">Backend · Diego</span><span class="badge green">Unity WebGL · Felipe</span><span class="badge green">Estrategia: Web-first (WebXR)</span>
   <h1>Biblia de Integración — Unity WebGL × XR Rooms Meet</h1>
   <div class="subtitle">Referencia técnica única para conectar el build WebGL de Unity con el backend, Supabase, Liveblocks y LiveKit del proyecto. Todo lo citado acá viene del código real del repo (rutas exactas al final de cada bloque).</div>
 </header>
@@ -266,7 +266,8 @@
 </div>
 
 <nav class="tabs" id="tabs">
-  <button data-tab="arch" class="active">1. Arquitectura</button>
+  <button data-tab="platform" class="active">0. Decisión de plataforma</button>
+  <button data-tab="arch">1. Arquitectura</button>
   <button data-tab="auth">2. Auth &amp; roomToken</button>
   <button data-tab="ws">3. WebSocket bridge</button>
   <button data-tab="spatial">4. Spatial Objects</button>
@@ -279,8 +280,57 @@
 
 <main>
 
+<!-- ══════════════════════════════ 0. DECISIÓN DE PLATAFORMA ══════════════════════════════ -->
+<section class="panel active" id="platform">
+  <h2>0. Decisión de plataforma <span class="badge green">Definido — 6 jul</span></h2>
+
+  <div class="card ok" style="background:rgba(52,211,153,0.05);">
+    <h4 style="color:var(--green)">✅ Decisión: Web-first — Unity WebGL + WebXR Export</h4>
+    <p>Objetivo de producto explícito: que el proyecto sea <b>lo más vendible posible</b> y sirva para <b>construir comunidad XR</b>. Con ese criterio se descartó "solo nativo Quest" — la fricción de comprar headset + sidecargar APK + esperar aprobación de tienda mata la mayor parte del alcance. Plataformas comparables que crecieron rápido como comunidad (Mozilla Hubs, Spatial.io) apostaron por lo mismo: <b>un link, sin instalar nada, funciona con o sin headset</b>. El nativo (OpenXR) queda como oferta secundaria/premium para más adelante, no como la base.</p>
+  </div>
+
+  <h3>Qué ve cada usuario según su dispositivo</h3>
+  <table>
+    <tr><th>Escenario</th><th>Qué pasa</th></tr>
+    <tr><td>Laptop/desktop, sin headset</td><td>Sala en 3D normal, cámara orbit/mouse — mismo build, sin sesión XR</td></tr>
+    <tr><td>Navegador del Quest (Quest Browser)</td><td>El build detecta WebXR disponible → botón "Entrar en VR" → sesión inmersiva real, sin instalar nada</td></tr>
+    <tr><td>Fase posterior, con tracción</td><td>Build nativo (OpenXR) opcional, para power users o showcases con mejor fidelidad</td></tr>
+  </table>
+
+  <h3>La pieza técnica que desbloqueó la decisión: voz sin el SDK nativo de Unity</h3>
+  <p>El riesgo pendiente era si <b>LiveKit</b> iba a andar en un build WebGL: el SDK <b>nativo</b> de LiveKit para Unity usa WebRTC nativo (<code>libwebrtc</code>), sin garantía de funcionar dentro de WebAssembly. Solución: <b>no usar el SDK nativo de Unity para voz</b>. En su lugar, un puente de JavaScript (<code>.jslib</code>, el mecanismo estándar de Unity para builds WebGL) llama directo al <b>SDK de JavaScript de LiveKit</b> (<code>livekit-client</code>) — el mismo paquete que ya usa <code>web-client/src/lib/liveblocks.ts</code> y compañía, y que sabemos que funciona en navegador. Unity WebGL corre dentro de la misma página HTML, así que puede invocar funciones JS y recibir callbacks de vuelta sin problema. Esto elimina la duda de compatibilidad — no se depende del SDK C# de LiveKit para nada.</p>
+
+  <div class="card gap">
+    <h4>⚠ Spike técnico a hacer antes de comprometer el resto del trabajo</h4>
+    <ul style="margin:0;padding-left:18px;">
+      <li>Build mínimo de Unity (WebGL + <a href="https://github.com/De-Panther/unity-webxr-export" target="_blank">Unity WebXR Export</a>) que entre en modo VR real dentro del navegador del Quest 3 físico (no simulador)</li>
+      <li>Puente <code>.jslib</code> mínimo: Unity pide "conectar a sala de voz X" → JS llama a <code>livekit-client</code> → confirmar audio bidireccional real entre dos clientes</li>
+      <li>Medir framerate real dentro de la sesión WebXR en el headset físico — objetivo 72fps+ para evitar mareo</li>
+    </ul>
+  </div>
+
+  <h3>Roadmap de plataformas</h3>
+  <div class="flow">
+    <div class="step" style="border-color:var(--green-dim)">Fase 1<br><span class="src">Unity WebGL + WebXR Export + puente JS a LiveKit — experiencia principal</span></div>
+    <div class="arrow">→</div>
+    <div class="step">Fase 2<br><span class="src">Pulir "compartir sala" y descubribilidad de salas públicas en web-client (React)</span></div>
+    <div class="arrow">→</div>
+    <div class="step">Fase 3 (opcional)<br><span class="src">Build nativo Quest (OpenXR) — oferta premium/showcase, cuando haya tracción</span></div>
+  </div>
+
+  <div class="card">
+    <h4>Qué pasa con <code>RoomScene.tsx</code> (Three.js, en <code>web-client</code>)</h4>
+    <p>Se re-encuadra su propósito: pasa a ser la "vista rápida de escritorio" para quien quiere espiar/probar sin cargar el build de Unity (que pesa más por ser WebAssembly). No compite con la experiencia principal, es un complemento liviano — no se borra.</p>
+  </div>
+
+  <div class="card gap">
+    <h4>⚠ Fidelidad visual dentro del presupuesto de Quest 3</h4>
+    <p>Al ser mobile GPU (Snapdragon XR2 Gen 2), la fidelidad se gana con decisiones de pipeline, no con fuerza bruta: <b>Universal Render Pipeline (URP)</b> (no HDRP), iluminación mayormente horneada/mixta (las luces dinámicas son lo que más rápido tira abajo el framerate en VR móvil), post-procesado con criterio (bloom + color grading rinden mucho por poco costo; evitar SSR y motion blur — este último además causa mareo), y LODs/GPU instancing para objetos que se repitan en la sala.</p>
+  </div>
+</section>
+
 <!-- ══════════════════════════════ 1. ARQUITECTURA ══════════════════════════════ -->
-<section class="panel active" id="arch">
+<section class="panel" id="arch">
   <h2>1. Arquitectura general</h2>
   <p>Monorepo con 3 clientes/servicios conectados a un único backend Express:</p>
 
@@ -632,11 +682,18 @@ at.addGrant({
     <tr><td class="role-viewer">viewer</td><td class="no">no (solo escucha)</td><td class="yes">sí</td><td class="yes">sí</td></tr>
   </table>
 
-  <h3>SDK para Unity</h3>
-  <p>Usar el <a href="https://github.com/livekit/client-sdk-unity" target="_blank">LiveKit Unity SDK</a> oficial. Conectarse con la <code>url</code> y el <code>token</code> devueltos por el endpoint de arriba — no generar tokens en el cliente, el <code>LIVEKIT_API_SECRET</code> nunca sale del backend (comentario explícito en <code>livekitService.js</code>).</p>
+  <h3>SDK a usar: puente JS al SDK web de LiveKit (NO el SDK nativo de Unity)</h3>
+  <p><b>Decisión (ver pestaña "0. Decisión de plataforma"):</b> no usar el <a href="https://github.com/livekit/client-sdk-unity" target="_blank">LiveKit Unity SDK</a> oficial, porque depende de WebRTC nativo (<code>libwebrtc</code>) sin garantía de funcionar en WebAssembly/WebGL. En su lugar:</p>
+  <ol>
+    <li>Unity pide el token igual que antes: <code>GET /api/livekit/token?room_id=...</code> (sin cambios en el backend).</li>
+    <li>Unity pasa <code>token</code> y <code>url</code> a JavaScript vía un plugin <code>.jslib</code> (mecanismo estándar de Unity para llamar JS desde C# en builds WebGL).</li>
+    <li>El código JS del lado del build usa el <b>SDK de JavaScript de LiveKit</b> (<code>livekit-client</code>) — el mismo paquete npm que ya corre en <code>web-client</code> — para conectarse, publicar/suscribir audio.</li>
+    <li>JS notifica eventos de vuelta a Unity (conectado, alguien habló, error) vía <code>SendMessage</code> hacia un GameObject de C#.</li>
+  </ol>
+  <p>Esto reutiliza una integración ya probada en navegador (la del web-client) en vez de apostar a que el SDK C# de LiveKit funcione dentro de WebAssembly — elimina la incertidumbre de compatibilidad de raíz.</p>
   <div class="card gap">
-    <h4>⚠ Verificar compatibilidad WebGL</h4>
-    <p>No encontré en el repo ninguna integración existente de LiveKit dentro de Unity (la carpeta <code>unity-client/</code> tiene solo el proyecto Unity default, sin scripts propios). El LiveKit Unity SDK usa WebRTC nativo (libwebrtc) — su soporte en el build target <b>WebGL</b> es limitado/depende de bindings JS específicos. Esto hay que validarlo con Felipe como parte del spike inicial, no asumir que "funciona igual" que en build nativo.</p>
+    <h4>⚠ Pendiente de validar en el spike</h4>
+    <p>Falta implementar y probar el puente <code>.jslib</code> concreto (Unity → JS → <code>livekit-client</code> → audio real bidireccional). Es el ítem más importante del spike técnico de la Fase 1 (ver pestaña "0").</p>
   </div>
 </section>
 
@@ -685,9 +742,9 @@ at.addGrant({
     <tr><td>Acceso a filesystem del dispositivo</td><td class="no">no (sandbox de navegador)</td><td class="yes">sí</td></tr>
   </table>
 
-  <div class="card gap">
-    <h4>⚠ Pregunta de arquitectura sin responder en el código</h4>
-    <p>No hay nada en el repo que indique si el build WebGL de Felipe usará el <b>WebXR Export</b> de Unity (para que funcione en modo VR estéreo dentro del navegador de Meta Quest) o si es un build WebGL "plano" (mouse/teclado, sin XR, pensado para desktop). Esto cambia bastante el checklist de testing — confirmar con Diego/Felipe cuál es el objetivo antes de fijar el checklist final.</p>
+  <div class="card ok">
+    <h4 style="color:var(--green)">✅ Resuelto: WebXR Export, con fallback plano automático</h4>
+    <p>Decisión tomada (ver pestaña "0"): el build usa <a href="https://github.com/De-Panther/unity-webxr-export" target="_blank">Unity WebXR Export</a> y detecta en runtime si el navegador ofrece una sesión WebXR disponible. Si sí (Quest Browser) → ofrece entrar en modo VR estéreo. Si no (desktop normal) → cae automáticamente al modo plano (mouse/orbit), sin necesitar dos builds distintos.</p>
   </div>
 </section>
 
@@ -800,14 +857,14 @@ Content-Type: application/json                          // en requests con body<
     <p>No encontré ningún endpoint para invitar usuarios a una sala privada asignándoles un rol específico, ni para cambiar el rol de un miembro existente (no hay <code>PATCH /api/rooms/:id/members/:userId</code> ni similar). <code>joinRoom</code> solo asigna <code>editor</code> (sala pública) o reutiliza un rol que ya debía existir de antes (sala privada). ¿Cómo se crea hoy una fila de <code>room_members</code> con rol <code>viewer</code>? ¿Es manual en Supabase, o falta ese endpoint?</p>
   </div>
 
-  <div class="card gap">
-    <h4>4. Origen del build WebGL: ¿WebXR o build plano?</h4>
-    <p>No hay nada en el repo (ni en <code>unity-client/</code>, vacío salvo el template default de Unity) que indique si el objetivo es un build con <b>WebXR Export</b> (estéreo, en el navegador del visor Quest) o un build WebGL de escritorio sin soporte XR. Esto cambia el checklist de UX/testing de la sección 7.</p>
+  <div class="card ok">
+    <h4 style="color:var(--green)">✅ 4. Resuelto — WebXR Export con fallback plano (ver pestaña "0")</h4>
+    <p>Decisión de producto tomada el 6 de julio: WebGL + WebXR Export, detección automática de sesión disponible, fallback a modo plano en desktop. Ya no es una pregunta abierta.</p>
   </div>
 
-  <div class="card gap">
-    <h4>5. Compatibilidad del LiveKit Unity SDK con el target WebGL</h4>
-    <p>El SDK de LiveKit para Unity usa WebRTC nativo; no hay evidencia en el repo de que ya se haya probado en un build WebGL. Hay que validarlo como spike técnico antes de comprometerlo en el checklist de voz.</p>
+  <div class="card ok">
+    <h4 style="color:var(--green)">✅ 5. Resuelto — no se usa el SDK nativo de Unity para voz</h4>
+    <p>En vez de validar si el SDK C# de LiveKit funciona en WebGL, se decidió evitarlo directamente: puente <code>.jslib</code> hacia el SDK de JavaScript de LiveKit (<code>livekit-client</code>), reutilizando la integración ya probada del web-client (ver pestaña "5. Voz"). Sigue pendiente <b>implementarlo y probarlo</b> como parte del spike técnico, pero la incertidumbre de "¿va a andar?" ya no aplica — es una integración conocida.</p>
   </div>
 
   <div class="card gap">
@@ -829,7 +886,7 @@ Content-Type: application/json                          // en requests con body<
 </main>
 
 <footer>
-  XR Rooms Meet — Biblia de integración Unity WebGL. Generado a partir del código real del repo el 6 de julio de 2026. No reemplaza <code>GET /api/docs</code> (Swagger) para el detalle completo de cada endpoint.
+  XR Rooms Meet — Biblia de integración Unity WebGL. Generado a partir del código real del repo el 6 de julio de 2026, actualizado el mismo día con la decisión de plataforma (web-first, WebXR). No reemplaza <code>GET /api/docs</code> (Swagger) para el detalle completo de cada endpoint.
 </footer>
 
 <script>
