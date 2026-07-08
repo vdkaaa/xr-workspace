@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2f290427505624bf2a27127d4a4cd64c
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebGLTemplates/WebXR/styles/webxr.css
+  uploadId: 363502

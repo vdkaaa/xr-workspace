@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b61429965477340de99938071e1a417a
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebGLTemplates/WebXR/vr.png
+  uploadId: 363502
