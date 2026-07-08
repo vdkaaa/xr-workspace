@@ -1,0 +1,72 @@
+.unity-viewer {
+    position: relative;
+    width: 100%;
+    /* 1280x720 del index.html original -> mismo ratio */
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  .unity-viewer__canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  
+  .unity-viewer__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #c8c8e0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+  }
+  
+  .unity-viewer__bar {
+    width: 220px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  
+  .unity-viewer__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    transition: width 0.15s ease;
+  }
+  
+  .unity-viewer__pct {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 11px;
+    color: #7a7a96;
+  }
+  
+  .unity-viewer--error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #f87171;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 24px;
+    text-align: center;
+  }
+  
+  .unity-viewer__title {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  .unity-viewer__detail {
+    font-size: 12px;
+    color: #9a9ab0;
+    max-width: 480px;
+    line-height: 1.5;
+  }
