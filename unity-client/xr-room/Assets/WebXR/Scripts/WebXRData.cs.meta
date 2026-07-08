@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 222918083bed54af4999811d6d31079f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebXR/Scripts/WebXRData.cs
+  uploadId: 363502

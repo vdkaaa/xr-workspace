@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 13e84aeb609bf472ca773e87abfcaa32
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebXR/Scripts/WebXR.asmdef
+  uploadId: 363502

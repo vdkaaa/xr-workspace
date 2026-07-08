@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 314aeec064402487781f0c4bbfbcc281
+timeCreated: 1518717559
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebXR/Samples/Desert/Models/cactus/Materials/Saguaro_BaseColor
+    1.mat
+  uploadId: 363502

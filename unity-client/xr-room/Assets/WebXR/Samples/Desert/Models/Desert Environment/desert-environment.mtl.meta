@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 471a6ea5f60fe45aabb628909786c1fc
+timeCreated: 1523331958
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebXR/Samples/Desert/Models/Desert Environment/desert-environment.mtl
+  uploadId: 363502

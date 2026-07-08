@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 69f7225c226874bccbf6af8f05e92742
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebGLTemplates/WebXR/lib/telemetry.js
+  uploadId: 363502
