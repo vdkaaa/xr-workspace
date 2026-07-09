@@ -1,6 +1,8 @@
 using UnityEngine;
-using UnityEngine.XR;
 using System.Runtime.InteropServices;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace WebXR
 {
@@ -20,9 +22,6 @@ namespace WebXR
 
         [Header("Tracking")] [Tooltip("Default height of camera if no room-scale transform is present.")]
         public float DefaultHeight = 1.2f;
-
-        [Tooltip("Represents the size of physical space available for XR.")]
-        public TrackingSpaceType TrackingSpace = TrackingSpaceType.RoomScale;
 
         private static string GlobalName = "WebXRCameraSet";
         private static WebXRManager instance;
@@ -62,16 +61,6 @@ namespace WebXR
         // link WebGL plugin for interacting with browser scripts.
         [DllImport("__Internal")]
         private static extern void ConfigureToggleXRKeyName(string keyName);
-
-        [DllImport("__Internal")]
-        private static extern void XRInitSharedArray(float[] array, int length);
-
-        [DllImport("__Internal")]
-        private static extern void ListenWebXRData();
-
-        // Shared array which we will load headset data in from webxr.jslib
-        // Array stores  5 matrices, each 16 values, stored linearly.
-        float[] sharedArray = new float[5 * 16];
 
         private WebXRDisplayCapabilities _capabilities;
 
@@ -117,16 +106,6 @@ namespace WebXR
             }
         }
 
-        [System.Obsolete]
-        private void SetTrackingSpaceType()
-        {
-            if (XRDevice.isPresent)
-            {
-                XRDevice.SetTrackingSpaceType(TrackingSpace);
-                Debug.Log("Tracking Space: " + XRDevice.GetTrackingSpaceType());
-            }
-        }
-
         // Handles WebXR data from browser
         public void OnWebXRData(string jsonString)
         {
@@ -152,6 +131,29 @@ namespace WebXR
                         controllerData.buttons,
                         controllerData.axes);
             }
+        }
+
+        // Handles headset (HMD) pose/projection data from the browser bridge.
+        // Called every XR frame via sendMessage(gameObjectName, "OnWebXRHeadsetData", json)
+        // from web-client's WebXRBridge (see web-client/src/components/unity/webxr).
+        public void OnWebXRHeadsetData(string jsonString)
+        {
+            if (OnHeadsetUpdate == null || xrState != WebXRState.ENABLED) return;
+
+            WebXRHeadsetData headsetData = WebXRHeadsetData.CreateFromJSON(jsonString);
+
+            Matrix4x4 leftProjectionMatrix = WebXRMatrixUtil.NumbersToMatrix(headsetData.leftProjectionMatrix);
+            Matrix4x4 rightProjectionMatrix = WebXRMatrixUtil.NumbersToMatrix(headsetData.rightProjectionMatrix);
+            Matrix4x4 leftViewMatrix = WebXRMatrixUtil.NumbersToMatrix(headsetData.leftViewMatrix);
+            Matrix4x4 rightViewMatrix = WebXRMatrixUtil.NumbersToMatrix(headsetData.rightViewMatrix);
+            Matrix4x4 sitStandMatrix = WebXRMatrixUtil.NumbersToMatrix(headsetData.sitStandMatrix);
+
+            OnHeadsetUpdate(
+                leftProjectionMatrix,
+                rightProjectionMatrix,
+                leftViewMatrix,
+                rightViewMatrix,
+                sitStandMatrix);
         }
 
         // Handles WebXR capabilities from browser
@@ -207,28 +209,13 @@ namespace WebXR
             Instance.setXrState(WebXRState.NORMAL);
         }
 
-        float[] GetFromSharedArray(int index)
-        {
-            float[] newArray = new float[16];
-            for (int i = 0; i < newArray.Length; i++)
-            {
-                newArray[i] = sharedArray[index * 16 + i];
-            }
-
-            return newArray;
-        }
-
         void Start()
         {
 #if UNITY_EDITOR
             // No editor specific functionality
 #elif UNITY_WEBGL
             ConfigureToggleXRKeyName(toggleXRKeyName);
-            XRInitSharedArray(sharedArray, sharedArray.Length);
-            ListenWebXRData();
 #endif
-
-            SetTrackingSpaceType();
         }
 
         void Update()
@@ -236,28 +223,23 @@ namespace WebXR
 #if UNITY_EDITOR || !UNITY_WEBGL
             if (string.IsNullOrEmpty(toggleXRKeyName))
                 return;
+
+            // Only used to test XR toggling from within the Editor / non-WebGL players.
+            // Supports both Input System configurations (activeInputHandler) so it
+            // doesn't throw when the legacy Input Manager is disabled.
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null &&
+                System.Enum.TryParse(toggleXRKeyName, true, out Key key) &&
+                Keyboard.current[key].wasReleasedThisFrame)
+            {
+                toggleXrState();
+            }
+#else
             if (Input.GetKeyUp(toggleXRKeyName))
                 toggleXrState();
 #endif
+#endif
         }
 
-        void LateUpdate()
-        {
-            if (OnHeadsetUpdate == null || xrState != WebXRState.ENABLED) return;
-
-            Matrix4x4 leftProjectionMatrix = WebXRMatrixUtil.NumbersToMatrix(GetFromSharedArray(0));
-            Matrix4x4 rightProjectionMatrix = WebXRMatrixUtil.NumbersToMatrix(GetFromSharedArray(1));
-            Matrix4x4 leftViewMatrix = WebXRMatrixUtil.NumbersToMatrix(GetFromSharedArray(2));
-            Matrix4x4 rightViewMatrix = WebXRMatrixUtil.NumbersToMatrix(GetFromSharedArray(3));
-            Matrix4x4 sitStandMatrix = WebXRMatrixUtil.NumbersToMatrix(GetFromSharedArray(4));
-            // Matrix4x4 sitStandMatrix = Matrix4x4.Translate(new Vector3(0, DefaultHeight, 0));
-
-            OnHeadsetUpdate(
-                leftProjectionMatrix,
-                rightProjectionMatrix,
-                leftViewMatrix,
-                rightViewMatrix,
-                sitStandMatrix);
-        }
     }
 }

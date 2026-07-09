@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Runtime.InteropServices;
 
 namespace WebXR
 {
@@ -8,21 +6,6 @@ namespace WebXR
     {
         [SerializeField] private Camera cameraMain, cameraL, cameraR;
         private bool xrActive;
-        private WaitForEndOfFrame wait = new WaitForEndOfFrame();
-        private Coroutine postRenderCoroutine;
-
-        [DllImport("__Internal")]
-        private static extern void XRPostRender();
-
-        private IEnumerator endOfFrame()
-        {
-            // Wait until end of frame to report back to WebXR browser to submit frame.
-            while (enabled)
-            {
-                yield return wait;
-                XRPostRender();
-            }
-        }
 
         void OnEnable()
         {
@@ -30,21 +13,14 @@ namespace WebXR
             WebXRManager.Instance.OnHeadsetUpdate += onHeadsetUpdate;
 
             cameraMain.transform.localPosition = new Vector3(0, WebXRManager.Instance.DefaultHeight, 0);
-
-#if UNITY_EDITOR
-			// No editor specific funtionality
-#elif UNITY_WEBGL
-			postRenderCoroutine = StartCoroutine(endOfFrame());
-#endif
         }
 
         private void OnDisable()
         {
-			if (postRenderCoroutine != null)
-			{
-				StopCoroutine(postRenderCoroutine);
-			}
-		}
+            if (WebXRManager.Instance == null) return;
+            WebXRManager.Instance.OnXRChange -= onVRChange;
+            WebXRManager.Instance.OnHeadsetUpdate -= onHeadsetUpdate;
+        }
 
         private void onVRChange(WebXRState state)
         {

@@ -1,9 +1,6 @@
 using UnityEngine;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.XR;
 
 namespace WebXR
 {
@@ -43,7 +40,6 @@ namespace WebXR
         private Matrix4x4 sitStand;
         private float[] axes;
 
-        private XRNode handNode;
         private Quaternion headRotation;
         private Vector3 headPosition;
         private Transform _t;
@@ -65,7 +61,11 @@ namespace WebXR
             }
         }
 
-        [Obsolete]
+        // Reads the current value of an action, fed exclusively by browser WebXR
+        // gamepad data (see onControllerUpdate). The old Unity XR Input Manager
+        // fallback was removed: it relied on the legacy "VR Module" (XRDevice),
+        // which Unity deprecated and is scheduled for full removal, and it never
+        // executed in WebGL builds anyway since XRDevice.isPresent is always false there.
         public float GetAxis(string action)
         {
             for (var i = 0; i < inputMap.inputs.Count; i++)
@@ -73,12 +73,8 @@ namespace WebXR
                 WebXRControllerInput input = inputMap.inputs[i];
                 if (action == input.actionName)
                 {
-                    if (XRDevice.isPresent && !input.unityInputIsButton)
-                    {
-                        return Input.GetAxis(input.unityInputName);
-                    }
-
-                    if (!input.gamepadIsButton) return axes[i];
+                    if (!input.gamepadIsButton)
+                        return axes != null && i < axes.Length ? axes[i] : 0;
 
                     if (!buttonStates.ContainsKey(action))
                         return 0;
@@ -90,18 +86,8 @@ namespace WebXR
             return 0;
         }
 
-        [Obsolete]
         public bool GetButton(string action)
         {
-            if (XRDevice.isPresent)
-            {
-                foreach (WebXRControllerInput input in inputMap.inputs)
-                {
-                    if (action == input.actionName && input.unityInputIsButton)
-                        return Input.GetButton(input.unityInputName);
-                }
-            }
-
             return buttonStates.ContainsKey(action) && buttonStates[action].pressed;
         }
 
@@ -128,19 +114,8 @@ namespace WebXR
             buttonStates[action].prevPressedState = isPressed;
         }
 
-        [Obsolete]
         public bool GetButtonDown(string action)
         {
-            // Use Unity Input Manager when XR is enabled and WebXR is not being used (eg: standalone or from within editor).
-            if (XRDevice.isPresent)
-            {
-                foreach (WebXRControllerInput input in inputMap.inputs)
-                {
-                    if (action == input.actionName && input.unityInputIsButton)
-                        return Input.GetButtonDown(input.unityInputName);
-                }
-            }
-
             if (GetButton(action) && !GetPastButtonState(action))
             {
                 SetPastButtonState(action, true);
@@ -150,19 +125,8 @@ namespace WebXR
             return false;
         }
 
-        [Obsolete]
         public bool GetButtonUp(string action)
         {
-            // Use Unity Input Manager when XR is enabled and WebXR is not being used (eg: standalone or from within editor).
-            if (XRDevice.isPresent)
-            {
-                foreach (WebXRControllerInput input in inputMap.inputs)
-                {
-                    if (action == input.actionName && input.unityInputIsButton)
-                        return Input.GetButtonUp(input.unityInputName);
-                }
-            }
-
             if (!GetButton(action) && GetPastButtonState(action))
             {
                 SetPastButtonState(action, false);
@@ -270,46 +234,6 @@ namespace WebXR
                 deltaControllerPosition;
             controllerPosition += deltaControllerPosition;
             return controllerPosition;
-        }
-
-        [Obsolete]
-        void Update()
-        {
-            // Use Unity XR Input when enabled. When using WebXR, updates are performed onControllerUpdate.
-            if (!XRDevice.isPresent) return;
-            
-            SetVisible(true);
-
-            if (this.hand == WebXRControllerHand.LEFT)
-                handNode = XRNode.LeftHand;
-
-            if (this.hand == WebXRControllerHand.RIGHT)
-                handNode = XRNode.RightHand;
-
-            if (this.simulate3dof)
-            {
-                _t.localPosition = applyArmModel(
-                    InputTracking.GetLocalPosition(XRNode.Head), // we use head position as origin
-                    InputTracking.GetLocalRotation(handNode),
-                    InputTracking.GetLocalRotation(XRNode.Head));
-                _t.localRotation = InputTracking.GetLocalRotation(handNode);
-            }
-            else
-            {
-                _t.localPosition = InputTracking.GetLocalPosition(handNode);
-                _t.localRotation = InputTracking.GetLocalRotation(handNode);
-            }
-
-            foreach (WebXRControllerInput input in inputMap.inputs)
-            {
-                if (!input.unityInputIsButton)
-                {
-                    if (Input.GetAxis(input.unityInputName) != 0)
-                        SetButtonState(input.actionName, true, Input.GetAxis(input.unityInputName));
-                    if (Input.GetAxis(input.unityInputName) < 1)
-                        SetButtonState(input.actionName, false, Input.GetAxis(input.unityInputName));
-                }
-            }
         }
 
         private void Awake()

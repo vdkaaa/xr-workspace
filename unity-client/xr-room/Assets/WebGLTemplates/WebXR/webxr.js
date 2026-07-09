@@ -1,3 +1,16 @@
+/*
+ * DEPRECATED: this file only runs when Unity's WebGL build is opened via the
+ * standalone `index.html` generated from this template (i.e. "Build And Run"
+ * directly from Unity), which itself is broken on Unity 6 because it targets
+ * the old `UnityLoader.instantiate` API removed years ago.
+ *
+ * The real app embeds Unity via react-unity-webgl and does NOT load this
+ * file or this index.html at all. The equivalent, maintained bridge lives at
+ * web-client/src/components/unity/webxr/WebXRBridge.ts — update that instead.
+ *
+ * This file is kept only so a standalone build can still be produced for
+ * quick manual testing outside of React; see docs/webxr-bridge-guide.md.
+ */
 (function () {
   'use strict';
 

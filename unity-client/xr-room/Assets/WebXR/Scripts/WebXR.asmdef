@@ -1,6 +1,8 @@
 {
     "name": "WebXR",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor",
