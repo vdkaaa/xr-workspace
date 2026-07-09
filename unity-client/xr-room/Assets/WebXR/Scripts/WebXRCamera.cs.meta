@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: f27b6e1b99a564b8bbe3383801aefa45
+timeCreated: 1523470993
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebXR/Scripts/WebXRCamera.cs
+  uploadId: 363502

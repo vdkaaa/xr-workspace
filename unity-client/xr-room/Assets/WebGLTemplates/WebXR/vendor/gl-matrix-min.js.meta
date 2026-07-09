@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 8147e12627df24c43b10058e74220f39
+timeCreated: 1521639009
+licenseType: Store
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 109152
+  packageName: WebXR Exporter
+  packageVersion: 2.0.1
+  assetPath: Assets/WebGLTemplates/WebXR/vendor/gl-matrix-min.js
+  uploadId: 363502
