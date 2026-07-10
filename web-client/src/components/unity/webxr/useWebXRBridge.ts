@@ -25,6 +25,12 @@ export interface UseWebXRBridgeResult {
   displayMessageId: string | null;
   /** Dismisses the current `displayMessageId` banner. */
   dismissDisplayMessage: () => void;
+  /**
+   * Debug: when true, VR session keeps Unity on CameraMain (no stereo).
+   * Toggle before enterVR; takes effect on the next session start.
+   */
+  debugMonoMode: boolean;
+  setDebugMonoMode: (enabled: boolean) => void;
   enterVR: () => Promise<void>;
   exitVR: () => void;
 }
@@ -39,6 +45,7 @@ export function useWebXRBridge(options: UseWebXRBridgeOptions): UseWebXRBridgeRe
   const [isVRSupported, setIsVRSupported] = useState(false);
   const [isInSession, setIsInSession] = useState(false);
   const [displayMessageId, setDisplayMessageId] = useState<string | null>(null);
+  const [debugMonoMode, setDebugMonoModeState] = useState(false);
 
   const bridgeRef = useRef<WebXRBridge | null>(null);
   const unityInstanceRef = useRef<UnityInstance | null>(unityInstance);
@@ -54,6 +61,7 @@ export function useWebXRBridge(options: UseWebXRBridgeOptions): UseWebXRBridgeRe
       onImmersiveStateChange: setIsInSession,
     });
     bridgeRef.current = bridge;
+    setDebugMonoModeState(bridge.isDebugMonoMode);
 
     return () => {
       bridge.dispose();
@@ -62,9 +70,10 @@ export function useWebXRBridge(options: UseWebXRBridgeOptions): UseWebXRBridgeRe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameObjectName]);
 
-  // Attach once Unity has finished loading.
+  // Attach the bridge as soon as the Unity instance exists (don't wait on
+  // isLoaded — on Quest that flag can lag behind loadingProgression === 1).
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!unityInstance) return;
     const bridge = bridgeRef.current;
     if (!bridge) return;
 
@@ -78,12 +87,23 @@ export function useWebXRBridge(options: UseWebXRBridgeOptions): UseWebXRBridgeRe
     return () => {
       cancelled = true;
     };
-  }, [isLoaded]);
+  }, [unityInstance]);
 
   // Unity -> React events dispatched from webxr.jslib via dispatchReactUnityEvent.
   useEffect(() => {
     const handleDisplayMessage: UnityEventListener = (id) => {
-      setDisplayMessageId(typeof id === "string" ? id : null);
+      if (typeof id !== "string") {
+        setDisplayMessageId(null);
+        return;
+      }
+      // Ack from WebXRManager.OnStartXR — proves SendMessage reached Unity.
+      if (id === "xr-started") {
+        console.info(
+          "[WebXRBridge][diag] ACK Unity: OnStartXR recibido (displayXRElementId=xr-started)."
+        );
+        return;
+      }
+      setDisplayMessageId(id);
     };
 
     addEventListener("WebXRDisplayMessage", handleDisplayMessage);
@@ -95,6 +115,11 @@ export function useWebXRBridge(options: UseWebXRBridgeOptions): UseWebXRBridgeRe
     isInSession,
     displayMessageId,
     dismissDisplayMessage: () => setDisplayMessageId(null),
+    debugMonoMode,
+    setDebugMonoMode: (enabled: boolean) => {
+      bridgeRef.current?.setDebugMonoMode(enabled);
+      setDebugMonoModeState(enabled);
+    },
     enterVR: () => bridgeRef.current?.enterVR() ?? Promise.resolve(),
     exitVR: () => bridgeRef.current?.exitVR(),
   };

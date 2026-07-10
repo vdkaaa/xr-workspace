@@ -13,6 +13,10 @@
     height: 100%;
     display: block;
   }
+
+  .unity-viewer__canvas--hidden {
+    visibility: hidden;
+  }
   
   .unity-viewer__loading {
     position: absolute;
@@ -71,10 +75,33 @@
     line-height: 1.5;
   }
 
-  .unity-viewer__vr-button {
+  .unity-viewer__vr-controls {
     position: absolute;
     right: 16px;
     bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .unity-viewer__mono-toggle {
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    background: rgba(10, 10, 20, 0.75);
+    color: #c8c8e0;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .unity-viewer__mono-toggle--on {
+    border-color: #fbbf24;
+    color: #fbbf24;
+  }
+
+  .unity-viewer__vr-button {
+    position: static;
     padding: 10px 18px;
     border: none;
     border-radius: 999px;
