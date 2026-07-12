@@ -7,8 +7,10 @@
 **/Temp/
 **/Logs/
 **/Obj/
-**/Build/
-**/Builds/
+# Solo builds del proyecto Unity — NO ignorar web-client/public/unity-build/Build/
+# (ese path se publica en Vercel con el WebGL embebido).
+unity-client/**/Build/
+unity-client/**/Builds/
 **/UserSettings/
 **/.vs/
 
