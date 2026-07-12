@@ -71,3 +71,4 @@ Desktop.ini
 *.orig
 *.swp
 .idea/
+.vercel

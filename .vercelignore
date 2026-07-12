@@ -1,0 +1,15 @@
+# Keep Vercel CLI uploads under the file limit (monorepo)
+unity-client/
+backend/
+docs/
+.git/
+**/node_modules/
+**/Library/
+**/Temp/
+**/Logs/
+**/Obj/
+**/.vs/
+**/.plastic/
+*.log
+.env*
+!.env.example
