@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
 import { useWebXRBridge } from "./webxr";
 import "./UnityViewer.css";
 
-// Ajustá esta ruta si copiás la carpeta Build/ en otro lugar de /public
 const UNITY_BUILD_ROOT = "/unity-build";
 const UNITY_BUILD_BASE = `${UNITY_BUILD_ROOT}/Build`;
-
-// Debe coincidir con WebXRManager.GlobalName ("WebXRCameraSet") en Unity.
 const WEBXR_GAME_OBJECT_NAME = "WebXRCameraSet";
 
 const UNITY_CONFIG = {
@@ -15,41 +12,93 @@ const UNITY_CONFIG = {
   dataUrl: `${UNITY_BUILD_BASE}/XR-Rooms.data.br`,
   frameworkUrl: `${UNITY_BUILD_BASE}/XR-Rooms.framework.js.br`,
   codeUrl: `${UNITY_BUILD_BASE}/XR-Rooms.wasm.br`,
-  // El Input System genera StreamingAssets/RuntimeActionBindings.json — sin
-  // esta ruta Unity intenta pedirlo relativo a "/StreamingAssets" (404 silencioso).
   streamingAssetsUrl: `${UNITY_BUILD_ROOT}/StreamingAssets`,
-  // companyName/productName vienen del build actual (placeholder "Cube Randomizer").
-  // Cuando Felipe suba el build real con BridgeManager, van a cambiar —
-  // no afecta el funcionamiento, solo son metadata.
   companyName: "3.14P",
   productName: "XR Rooms",
-  productVersion: "1.0.0",
-  // Requerido para que el canvas de Unity pueda ser usado como framebuffer
-  // destino de una sesión WebXR (ver Assets/WebXR/Plugins/WebGL/webxr.jspre).
+  productVersion: "1.0.2",
   webglContextAttributes: {
     xrCompatible: true,
     preserveDrawingBuffer: true,
   },
 };
 
-// Mensajes legibles para los ids que Unity manda vía displayXRElementId
-// (Assets/WebXR/Scripts/WebXRUI.cs -> webxr.jslib -> evento "WebXRDisplayMessage").
 const XR_DISPLAY_MESSAGES: Record<string, string> = {
   novr: "Tu navegador o dispositivo no soporta WebXR inmersivo. Podés seguir mirando la escena en modo escritorio.",
+  // Internal ack from WebXRManager.OnStartXR — not shown as a user banner.
+  "xr-started": "",
 };
 
 type LoadState = "checking" | "loading" | "loaded" | "error";
 
 interface UnityViewerProps {
-  /** Se dispara una vez que Unity terminó de cargar (Fase B lo va a usar para esperar READY) */
   onLoaded?: () => void;
 }
 
-export default function UnityViewer({ onLoaded }: UnityViewerProps) {
+/** Unity 6 WebGL requires WebGL 2. Probe before loading the ~8 MB wasm payload. */
+function probeWebGL2(): string | null {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2", { xrCompatible: true }) ??
+      canvas.getContext("webgl2");
+    if (!gl) {
+      return "WebGL 2 no está disponible en este navegador. Unity 6 lo requiere.";
+    }
+    // Release the probe context — Quest has a low WebGL context limit.
+    const loseContext = gl.getExtension("WEBGL_lose_context");
+    loseContext?.loseContext();
+    return null;
+  } catch {
+    return "No se pudo crear un contexto WebGL en este navegador.";
+  }
+}
+
+function explainUnityInitError(message: string): string {
+  if (!message.includes("does not support WebGL")) return message;
+
+  return (
+    `${message}\n\n` +
+    "Esto casi nunca significa que el Quest o Chrome “no soporten” WebGL. Suele pasar cuando:\n" +
+    "• Hay demasiados contextos WebGL abiertos (muchas recargas con Vite HMR / React Strict Mode en dev).\n" +
+    "• Quedó una instancia anterior de Unity sin liberar memoria.\n\n" +
+    "Probá: cerrar otras pestañas con Unity, recarga completa (Ctrl+Shift+R), o reiniciar el navegador del Quest."
+  );
+}
+
+function LoadingOverlay({
+  label,
+  progress,
+}: {
+  label: string;
+  progress?: number;
+}) {
+  return (
+    <div className="unity-viewer__loading">
+      {progress !== undefined && (
+        <div className="unity-viewer__bar">
+          <div className="unity-viewer__bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+      <span className="unity-viewer__pct">{label}</span>
+    </div>
+  );
+}
+
+interface UnityPlayerProps {
+  onLoaded?: () => void;
+  onError: (message: string) => void;
+}
+
+/**
+ * Mounted only after server + WebGL preflight pass, so we don't spawn Unity
+ * (and consume a WebGL context) while still verifying the build.
+ */
+function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
   const {
     unityProvider,
     isLoaded,
     loadingProgression,
+    initialisationError,
     sendMessage,
     addEventListener,
     removeEventListener,
@@ -57,26 +106,117 @@ export default function UnityViewer({ onLoaded }: UnityViewerProps) {
   } = useUnityContext(UNITY_CONFIG);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onLoadedRef = useRef(onLoaded);
+  onLoadedRef.current = onLoaded;
 
+  const {
+    isVRSupported,
+    isInSession,
+    displayMessageId,
+    dismissDisplayMessage,
+    debugMonoMode,
+    setDebugMonoMode,
+    enterVR,
+    exitVR,
+  } = useWebXRBridge({
+    isLoaded,
+    sendMessage,
+    addEventListener,
+    removeEventListener,
+    unityInstance: UNSAFE__unityInstance,
+    gameObjectName: WEBXR_GAME_OBJECT_NAME,
+  });
+
+  useEffect(() => {
+    if (!initialisationError) return;
+    const message =
+      initialisationError instanceof Error
+        ? initialisationError.message
+        : String(initialisationError);
+    onError(explainUnityInitError(message));
+  }, [initialisationError, onError]);
+
+  const isReady = isLoaded || loadingProgression >= 1;
+  const progressPct = Math.round(loadingProgression * 100);
+
+  useEffect(() => {
+    if (isReady) onLoadedRef.current?.();
+  }, [isReady]);
+
+  return (
+    <>
+      {!isReady && (
+        <LoadingOverlay
+          label={`${progressPct}%`}
+          progress={progressPct}
+        />
+      )}
+      {/* Visibility via class, NOT the style prop: React reconciles the style attribute on every
+          re-render, which would wipe the inline width/height the WebXR bridge sets on the canvas
+          during an immersive session (Unity samples that client size for its resolution). */}
+      <Unity
+        ref={canvasRef}
+        unityProvider={unityProvider}
+        className={`unity-viewer__canvas${isReady ? "" : " unity-viewer__canvas--hidden"}`}
+      />
+
+      {isReady && isVRSupported && (
+        <div className="unity-viewer__vr-controls">
+          {!isInSession && (
+            <button
+              type="button"
+              className={`unity-viewer__mono-toggle${debugMonoMode ? " unity-viewer__mono-toggle--on" : ""}`}
+              onClick={() => setDebugMonoMode(!debugMonoMode)}
+              title="Aislar estereoscopía: en mono Unity no cambia a CameraL/R"
+            >
+              {debugMonoMode ? "Mono ON" : "Mono OFF"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="unity-viewer__vr-button"
+            onClick={() => (isInSession ? exitVR() : enterVR().catch(console.error))}
+          >
+            {isInSession
+              ? "Salir de VR"
+              : debugMonoMode
+                ? "Entrar en VR (mono)"
+                : "Entrar en VR"}
+          </button>
+        </div>
+      )}
+
+      {isReady && displayMessageId && XR_DISPLAY_MESSAGES[displayMessageId] && (
+        <div className="unity-viewer__banner">
+          <p>{XR_DISPLAY_MESSAGES[displayMessageId]}</p>
+          <button type="button" onClick={dismissDisplayMessage}>
+            Continuar
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function UnityViewer({ onLoaded }: UnityViewerProps) {
   const [status, setStatus] = useState<LoadState>("checking");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [playerKey, setPlayerKey] = useState(0);
 
-  const { isVRSupported, isInSession, displayMessageId, dismissDisplayMessage, enterVR, exitVR } =
-    useWebXRBridge({
-      isLoaded,
-      sendMessage,
-      addEventListener,
-      removeEventListener,
-      unityInstance: UNSAFE__unityInstance,
-      gameObjectName: WEBXR_GAME_OBJECT_NAME,
-    });
+  const handlePlayerError = useCallback((message: string) => {
+    setStatus("error");
+    setErrorMsg(message);
+  }, []);
 
-  // Preflight: confirma que el servidor manda los headers correctos
-  // para los archivos .br ANTES de dejar que Unity intente cargarlos.
-  // Sin esto, un mal-config de servidor se ve como "canvas negro sin
-  // ningún error en consola" — muy difícil de diagnosticar a ciegas.
   useEffect(() => {
     let cancelled = false;
+
+    const webglError = probeWebGL2();
+    if (webglError) {
+      setStatus("error");
+      setErrorMsg(webglError);
+      return;
+    }
 
     fetch(UNITY_CONFIG.dataUrl, { method: "HEAD" })
       .then((res) => {
@@ -86,7 +226,7 @@ export default function UnityViewer({ onLoaded }: UnityViewerProps) {
           setStatus("error");
           setErrorMsg(
             `No se encontró el build (HTTP ${res.status}) en ${UNITY_CONFIG.dataUrl}. ` +
-              `¿Copiaste la carpeta Build/ dentro de public/unity-build/?`
+              "¿Copiaste la carpeta Build/ dentro de public/unity-build/?"
           );
           return;
         }
@@ -96,7 +236,7 @@ export default function UnityViewer({ onLoaded }: UnityViewerProps) {
           setStatus("error");
           setErrorMsg(
             "El servidor no está devolviendo 'Content-Encoding: br' para los archivos .br. " +
-              "Revisá vite.config.ts (dev) o vercel.json (prod) — ver README-fase-A.md."
+              "Revisá vite.config.ts (dev) o vercel.json (prod)."
           );
           return;
         }
@@ -115,78 +255,36 @@ export default function UnityViewer({ onLoaded }: UnityViewerProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      setStatus("loaded");
-      onLoaded?.();
-    }
-  }, [isLoaded, onLoaded]);
-
-  // Red de seguridad extra: errores no capturados que vengan del propio
-  // runtime de Unity (ej. wasm corrupto, memoria insuficiente en el navegador)
-  useEffect(() => {
-    const handleWindowError = (event: ErrorEvent) => {
-      if (status === "loaded") return;
-      const msg = event.message?.toLowerCase() ?? "";
-      if (msg.includes("unity") || msg.includes("wasm")) {
-        setStatus("error");
-        setErrorMsg(event.message);
-      }
-    };
-    window.addEventListener("error", handleWindowError);
-    return () => window.removeEventListener("error", handleWindowError);
-  }, [status]);
-
   if (status === "error") {
     return (
       <div className="unity-viewer unity-viewer--error">
         <p className="unity-viewer__title">No se pudo cargar la escena 3D</p>
-        {errorMsg && <p className="unity-viewer__detail">{errorMsg}</p>}
+        {errorMsg && (
+          <p className="unity-viewer__detail" style={{ whiteSpace: "pre-line" }}>
+            {errorMsg}
+          </p>
+        )}
+        <button
+          type="button"
+          className="unity-viewer__vr-button"
+          style={{ position: "static", marginTop: 16 }}
+          onClick={() => {
+            setErrorMsg(null);
+            setPlayerKey((k) => k + 1);
+            setStatus("loading");
+          }}
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
 
   return (
     <div className="unity-viewer">
-      {status !== "loaded" && (
-        <div className="unity-viewer__loading">
-          <div className="unity-viewer__bar">
-            <div
-              className="unity-viewer__bar-fill"
-              style={{ width: `${Math.round(loadingProgression * 100)}%` }}
-            />
-          </div>
-          <span className="unity-viewer__pct">
-            {status === "checking"
-              ? "Verificando servidor..."
-              : `${Math.round(loadingProgression * 100)}%`}
-          </span>
-        </div>
-      )}
-      <Unity
-        ref={canvasRef}
-        unityProvider={unityProvider}
-        className="unity-viewer__canvas"
-        style={{ visibility: status === "loaded" ? "visible" : "hidden" }}
-      />
-
-      {status === "loaded" && isVRSupported && (
-        <button
-          type="button"
-          className="unity-viewer__vr-button"
-          onClick={() => (isInSession ? exitVR() : enterVR().catch(console.error))}
-        >
-          {isInSession ? "Salir de VR" : "Entrar en VR"}
-        </button>
-      )}
-
-      {status === "loaded" && displayMessageId && (
-        <div className="unity-viewer__banner">
-          <p>{XR_DISPLAY_MESSAGES[displayMessageId] ?? displayMessageId}</p>
-          <button type="button" onClick={dismissDisplayMessage}>
-            Continuar
-          </button>
-        </div>
+      {status === "checking" && <LoadingOverlay label="Verificando servidor y WebGL..." />}
+      {status === "loading" && (
+        <UnityPlayer key={playerKey} onLoaded={onLoaded} onError={handlePlayerError} />
       )}
     </div>
   );
