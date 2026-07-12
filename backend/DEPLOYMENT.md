@@ -2,10 +2,13 @@
 
 Backend desplegado en Railway.
 
-- **URL producción:** https://xr-workspace-production.up.railway.app
-- **Health check:** https://xr-workspace-production.up.railway.app/health
+- **URL producción:** https://xr-workspace-production-1728.up.railway.app
+- **Health check:** https://xr-workspace-production-1728.up.railway.app/health
 - **Branch:** feature/backend
 - **Auto-deploy:** activado — cada push a `feature/backend` despliega automáticamente
+
+> Nota: la URL corta `xr-workspace-production.up.railway.app` apunta a otro servicio
+> (no es el backend de XR Rooms). Usá siempre la URL con sufijo `-1728`.
 
 ## Variables de entorno requeridas
 
