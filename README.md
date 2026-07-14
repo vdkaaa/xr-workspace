@@ -31,7 +31,7 @@ xr-workspace/
 
 - Unity 6.3 LTS (6000.3.9f1) con Android Build Support
 - Node.js 20+
-- Git + Git LFS
+- Git + [Git LFS](https://git-lfs.com) (cuota activa en Billing del dueño del repo)
 - Cuenta Supabase
 - Cuenta Photon Engine
 - Cuenta Upstash Redis
@@ -42,10 +42,14 @@ xr-workspace/
 ### 1. Clonar
 
 ```bash
-git clone https://github.com/tu-org/xr-workspace.git
+git clone https://github.com/vdkaaa/xr-workspace.git
 cd xr-workspace
+git checkout develop
 git lfs pull
 ```
+
+Guía completa (presupuesto LFS, workaround, qué archivos van en LFS):
+[docs/git-clone-lfs.md](docs/git-clone-lfs.md)
 
 ### 2. Backend
 
