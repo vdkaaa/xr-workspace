@@ -3,6 +3,16 @@ import { Unity, useUnityContext } from "react-unity-webgl";
 import { useWebXRBridge } from "./webxr";
 import "./UnityViewer.css";
 
+declare global {
+  interface Window {
+    __XRRoomUnity?: {
+      sendMessage: (gameObjectName: string, methodName: string, parameter?: string | number) => void;
+      sendToBridgeManager: (methodName: string, parameter?: string | number) => void;
+      getInstance: () => unknown;
+    };
+  }
+}
+
 const UNITY_BUILD_ROOT = "/unity-build";
 const UNITY_BUILD_BASE = `${UNITY_BUILD_ROOT}/Build`;
 const WEBXR_GAME_OBJECT_NAME = "WebXRCameraSet";
@@ -108,6 +118,28 @@ function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.__XRRoomUnity = {
+      sendMessage: (gameObjectName, methodName, parameter) => {
+        if (UNSAFE__unityInstance?.SendMessage) {
+          UNSAFE__unityInstance.SendMessage(gameObjectName, methodName, parameter);
+        } else {
+          console.warn("[UnityConsole] Unity aún no está listo para recibir mensajes.");
+        }
+      },
+      sendToBridgeManager: (methodName, parameter) => {
+        window.__XRRoomUnity?.sendMessage("BridgeManager", methodName, parameter);
+      },
+      getInstance: () => UNSAFE__unityInstance ?? null,
+    };
+
+    return () => {
+      delete window.__XRRoomUnity;
+    };
+  }, [UNSAFE__unityInstance]);
 
   const {
     isVRSupported,

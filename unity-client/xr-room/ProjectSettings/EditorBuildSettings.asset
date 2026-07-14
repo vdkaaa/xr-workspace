@@ -8,9 +8,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/WebXR/Samples/Desert/WebXR.unity
     guid: 62764e63b9bc64baaaf251014195be42
+  - enabled: 1
+    path: Assets/Scenes/Pruebas/Escena Basica.unity
+    guid: a2869d3dfb121094694747f618485c2c
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: deff75728191e8042a1cc2582de24bfe, type: 2}
