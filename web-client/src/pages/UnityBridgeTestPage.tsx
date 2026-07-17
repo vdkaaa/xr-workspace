@@ -33,12 +33,12 @@ export default function UnityBridgeTestPage() {
   }, [messageRouter, registerBridge]);
 
   useEffect(() => {
-    if (status === "authenticating") markEvent("READY recibido");
-    else if (status === "ready") markEvent("OK recibido");
+    if (status === "authenticating") markEvent("READY received");
+    else if (status === "ready") markEvent("OK received");
   }, [status]);
 
   useEffect(() => {
-    if (errorMessage) markEvent("ERROR recibido");
+    if (errorMessage) markEvent("ERROR received");
   }, [errorMessage]);
 
   return (
@@ -47,7 +47,7 @@ export default function UnityBridgeTestPage() {
         Test — useUnityBridge (MockBridge)
       </h1>
       <p style={{ fontSize: 13, color: "#666", marginBottom: 24 }}>
-        Sin build de Unity. El mock emite READY → INIT → OK.
+        No Unity build. The mock emits READY → INIT → OK.
       </p>
 
       <p style={{ fontSize: 14, marginBottom: 8 }}>
@@ -81,7 +81,7 @@ export default function UnityBridgeTestPage() {
             const next = "room-demo-002";
             changeRoom(next);
             setCurrentRoomId(next);
-            markEvent("CHANGE_ROOM enviado");
+            markEvent("CHANGE_ROOM sent");
           }}
         >
           changeRoom → room-demo-002
@@ -90,7 +90,7 @@ export default function UnityBridgeTestPage() {
           type="button"
           onClick={() => {
             logout();
-            markEvent("LOGOUT enviado");
+            markEvent("LOGOUT sent");
           }}
         >
           logout

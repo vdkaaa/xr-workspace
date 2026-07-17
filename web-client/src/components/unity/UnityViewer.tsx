@@ -35,7 +35,7 @@ const UNITY_CONFIG = {
 };
 
 const XR_DISPLAY_MESSAGES: Record<string, string> = {
-  novr: "Tu navegador o dispositivo no soporta WebXR inmersivo. Podés seguir mirando la escena en modo escritorio.",
+  novr: "Your browser or device doesn't support immersive WebXR. You can still view the scene in desktop mode.",
   // Internal ack from WebXRManager.OnStartXR — not shown as a user banner.
   "xr-started": "",
 };
@@ -59,14 +59,14 @@ function probeWebGL2(): string | null {
       canvas.getContext("webgl2", { xrCompatible: true }) ??
       canvas.getContext("webgl2");
     if (!gl) {
-      return "WebGL 2 no está disponible en este navegador. Unity 6 lo requiere.";
+      return "WebGL 2 is not available in this browser. Unity 6 requires it.";
     }
     // Release the probe context — Quest has a low WebGL context limit.
     const loseContext = gl.getExtension("WEBGL_lose_context");
     loseContext?.loseContext();
     return null;
   } catch {
-    return "No se pudo crear un contexto WebGL en este navegador.";
+    return "Could not create a WebGL context in this browser.";
   }
 }
 
@@ -75,10 +75,10 @@ function explainUnityInitError(message: string): string {
 
   return (
     `${message}\n\n` +
-    "Esto casi nunca significa que el Quest o Chrome “no soporten” WebGL. Suele pasar cuando:\n" +
-    "• Hay demasiados contextos WebGL abiertos (muchas recargas con Vite HMR / React Strict Mode en dev).\n" +
-    "• Quedó una instancia anterior de Unity sin liberar memoria.\n\n" +
-    "Probá: cerrar otras pestañas con Unity, recarga completa (Ctrl+Shift+R), o reiniciar el navegador del Quest."
+    "This almost never means Quest or Chrome \"don't support\" WebGL. It usually happens when:\n" +
+    "• Too many WebGL contexts are open (many reloads with Vite HMR / React Strict Mode in dev).\n" +
+    "• A previous Unity instance was left without freeing memory.\n\n" +
+    "Try: close other Unity tabs, hard refresh (Ctrl+Shift+R), or restart the Quest browser."
   );
 }
 
@@ -198,7 +198,7 @@ function UnityPlayer({ onLoaded, onBridgeReady, onError }: UnityPlayerProps) {
               type="button"
               className={`unity-viewer__mono-toggle${debugMonoMode ? " unity-viewer__mono-toggle--on" : ""}`}
               onClick={() => setDebugMonoMode(!debugMonoMode)}
-              title="Aislar estereoscopía: en mono Unity no cambia a CameraL/R"
+              title="Isolate stereoscopy: in mono mode Unity won't switch to CameraL/R"
             >
               {debugMonoMode ? "Mono ON" : "Mono OFF"}
             </button>
@@ -209,10 +209,10 @@ function UnityPlayer({ onLoaded, onBridgeReady, onError }: UnityPlayerProps) {
             onClick={() => (isInSession ? exitVR() : enterVR().catch(console.error))}
           >
             {isInSession
-              ? "Salir de VR"
+              ? "Exit VR"
               : debugMonoMode
-                ? "Entrar en VR (mono)"
-                : "Entrar en VR"}
+                ? "Enter VR (mono)"
+                : "Enter VR"}
           </button>
         </div>
       )}
@@ -221,7 +221,7 @@ function UnityPlayer({ onLoaded, onBridgeReady, onError }: UnityPlayerProps) {
         <div className="unity-viewer__banner">
           <p>{XR_DISPLAY_MESSAGES[displayMessageId]}</p>
           <button type="button" onClick={dismissDisplayMessage}>
-            Continuar
+            Continue
           </button>
         </div>
       )}
@@ -256,8 +256,8 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
         if (!res.ok) {
           setStatus("error");
           setErrorMsg(
-            `No se encontró el build (HTTP ${res.status}) en ${UNITY_CONFIG.dataUrl}. ` +
-              "¿Copiaste la carpeta Build/ dentro de public/unity-build/?"
+            `Build not found (HTTP ${res.status}) at ${UNITY_CONFIG.dataUrl}. ` +
+              "Did you copy the Build/ folder into public/unity-build/?"
           );
           return;
         }
@@ -266,8 +266,8 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
         if (encoding !== "br") {
           setStatus("error");
           setErrorMsg(
-            "El servidor no está devolviendo 'Content-Encoding: br' para los archivos .br. " +
-              "Revisá vite.config.ts (dev) o vercel.json (prod)."
+            "The server is not returning 'Content-Encoding: br' for .br files. " +
+              "Check vite.config.ts (dev) or vercel.json (prod)."
           );
           return;
         }
@@ -277,7 +277,7 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
       .catch(() => {
         if (!cancelled) {
           setStatus("error");
-          setErrorMsg("No se pudo contactar al servidor para pedir el build de Unity.");
+          setErrorMsg("Could not reach the server to request the Unity build.");
         }
       });
 
@@ -289,7 +289,7 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
   if (status === "error") {
     return (
       <div className="unity-viewer unity-viewer--error">
-        <p className="unity-viewer__title">No se pudo cargar la escena 3D</p>
+        <p className="unity-viewer__title">Could not load the 3D scene</p>
         {errorMsg && (
           <p className="unity-viewer__detail" style={{ whiteSpace: "pre-line" }}>
             {errorMsg}
@@ -305,7 +305,7 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
             setStatus("loading");
           }}
         >
-          Reintentar
+          Retry
         </button>
       </div>
     );
@@ -313,7 +313,7 @@ export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProp
 
   return (
     <div className="unity-viewer">
-      {status === "checking" && <LoadingOverlay label="Verificando servidor y WebGL..." />}
+      {status === "checking" && <LoadingOverlay label="Checking server and WebGL..." />}
       {status === "loading" && (
         <UnityPlayer
           key={playerKey}

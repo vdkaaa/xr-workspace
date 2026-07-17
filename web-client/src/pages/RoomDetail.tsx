@@ -73,13 +73,13 @@ export function RoomDetail() {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-gray-950">
         <p className="text-red-400 font-mono text-sm">
-          {error ?? "Sala no encontrada"}
+          {error ?? "Room not found"}
         </p>
         <button
           onClick={() => navigate("/rooms")}
           className="text-blue-400 text-sm underline font-mono"
         >
-          Volver a salas
+          Back to rooms
         </button>
       </div>
     );
@@ -127,13 +127,13 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
 
   const unityStatusLabel =
     status === "idle"
-      ? "Esperando Unity..."
+      ? "Waiting for Unity..."
       : status === "waiting-ready"
-        ? "Cargando escena..."
+        ? "Loading scene..."
         : status === "authenticating"
-          ? "Autenticando..."
+          ? "Authenticating..."
           : status === "ready"
-            ? "Conectado"
+            ? "Connected"
             : `Error: ${errorMessage}`;
 
   const unityStatusClass =

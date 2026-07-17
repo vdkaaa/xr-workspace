@@ -61,7 +61,7 @@ export const RoomsPage: React.FC = () => {
               {user?.name || user?.email}
             </span>
             <Button variant="ghost" onClick={handleLogout} className="text-xs px-3 py-2">
-              Salir
+              Log out
             </Button>
           </div>
         </div>
@@ -73,13 +73,13 @@ export const RoomsPage: React.FC = () => {
         {/* Título + botón crear */}
         <div className="flex items-center justify-between mb-8 fade-up">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--text-primary)]">Mis salas</h2>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">My rooms</h2>
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-              {rooms.length} sala{rooms.length !== 1 ? 's' : ''} disponible{rooms.length !== 1 ? 's' : ''}
+              {rooms.length} room{rooms.length !== 1 ? 's' : ''} available
             </p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
-            + Nueva sala
+            + New room
           </Button>
         </div>
 
@@ -90,9 +90,9 @@ export const RoomsPage: React.FC = () => {
           </div>
         ) : rooms.length === 0 ? (
           <div className="text-center py-20 fade-up">
-            <p className="text-[var(--text-secondary)] text-sm">No tenés salas todavía</p>
+            <p className="text-[var(--text-secondary)] text-sm">You don't have any rooms yet</p>
             <Button className="mt-4" onClick={() => setShowCreate(true)}>
-              Crear primera sala
+              Create your first room
             </Button>
           </div>
         ) : (
@@ -109,19 +109,19 @@ export const RoomsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-50">
           <Card className="w-full max-w-md p-6 fade-up">
             <h3 className="text-base font-semibold text-[var(--text-primary)] mb-5">
-              Nueva sala
+              New room
             </h3>
             <form onSubmit={handleCreate} className="flex flex-col gap-4">
               <Input
-                label="Nombre"
-                placeholder="Ej: Sala de diseño sprint 2"
+                label="Name"
+                placeholder="e.g. Design sprint room 2"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 required
               />
               <Input
-                label="Descripción (opcional)"
-                placeholder="De qué trata esta sala"
+                label="Description (optional)"
+                placeholder="What this room is about"
                 value={newDesc}
                 onChange={e => setNewDesc(e.target.value)}
               />
@@ -136,14 +136,14 @@ export const RoomsPage: React.FC = () => {
                     isPublic ? 'translate-x-4' : 'translate-x-0.5'
                   }`} />
                 </div>
-                <span className="text-sm text-[var(--text-secondary)]">Sala pública</span>
+                <span className="text-sm text-[var(--text-secondary)]">Public room</span>
               </label>
               <div className="flex gap-3 mt-2">
                 <Button variant="ghost" className="flex-1" onClick={() => setShowCreate(false)} type="button">
-                  Cancelar
+                  Cancel
                 </Button>
                 <Button className="flex-1" type="submit" isLoading={creating}>
-                  Crear sala
+                  Create room
                 </Button>
               </div>
             </form>
@@ -187,7 +187,7 @@ const RoomCard: React.FC<{ room: Room; delay: number; token: string }> = ({ room
             ? 'bg-green-500/10 text-green-400 border border-green-500/20'
             : 'bg-white/5 text-[var(--text-muted)] border border-white/8'
         }`}>
-          {room.is_public ? 'Pública' : 'Privada'}
+          {room.is_public ? 'Public' : 'Private'}
         </span>
       </div>
 
@@ -202,10 +202,10 @@ const RoomCard: React.FC<{ room: Room; delay: number; token: string }> = ({ room
 
       <div className="flex items-center justify-between mt-4">
         <span className="text-xs text-[var(--text-muted)]">
-          Max {room.max_users} usuarios
+          Max {room.max_users} users
         </span>
         <Button variant="ghost" className="text-xs px-3 py-1.5" onClick={handleJoin} isLoading={joining}>
-          Entrar
+          Enter
         </Button>
       </div>
     </Card>

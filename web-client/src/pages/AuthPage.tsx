@@ -42,7 +42,7 @@ export const AuthPage: React.FC = () => {
             XR Rooms Meet
           </h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
-            {mode === 'login' ? 'Ingresá a tu cuenta' : 'Creá tu cuenta'}
+            {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
           </p>
         </div>
 
@@ -50,9 +50,9 @@ export const AuthPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 fade-up fade-up-delay-1">
           {mode === 'register' && (
             <Input
-              label="Nombre"
+              label="Name"
               type="text"
-              placeholder="Tu nombre"
+              placeholder="Your name"
               value={name}
               onChange={e => setName(e.target.value)}
               required
@@ -62,14 +62,14 @@ export const AuthPage: React.FC = () => {
           <Input
             label="Email"
             type="email"
-            placeholder="tu@email.com"
+            placeholder="you@email.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
           />
 
           <Input
-            label="Contraseña"
+            label="Password"
             type="password"
             placeholder="••••••••"
             value={password}
@@ -85,19 +85,19 @@ export const AuthPage: React.FC = () => {
           )}
 
           <Button type="submit" isLoading={isLoading} className="w-full mt-2">
-            {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+            {mode === 'login' ? 'Sign in' : 'Create account'}
           </Button>
         </form>
 
         {/* Toggle login/register */}
         <p className="text-center text-sm text-[var(--text-secondary)] mt-6 fade-up fade-up-delay-2">
-          {mode === 'login' ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?'}
+          {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
           {' '}
           <button
             onClick={toggleMode}
             className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
           >
-            {mode === 'login' ? 'Registrate' : 'Iniciá sesión'}
+            {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
         </p>
       </div>

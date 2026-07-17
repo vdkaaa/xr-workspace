@@ -28,10 +28,10 @@ export default function UnityTestPage() {
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: "0 16px" }}>
       <h1 style={{ fontSize: 18, marginBottom: 16 }}>
-        Test — Carga de Unity WebGL (Fase A)
+        Test — Unity WebGL load (Phase A)
       </h1>
       <p style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
-        Consola: <code>window.__unityBridge</code> — sendMessage / addEventListener
+        Console: <code>window.__unityBridge</code> — sendMessage / addEventListener
       </p>
       <UnityViewer
         onLoaded={() => console.log("[Unity] cargado OK")}

@@ -438,7 +438,7 @@ export function useRoomSocket(params: {
 
         if (failCountRef.current >= MAX_FAILURES) {
           setStatus("error");
-          setErrorMessage("WebSocket: demasiados fallos de reconexión");
+          setErrorMessage("WebSocket: too many reconnection failures");
           return;
         }
 

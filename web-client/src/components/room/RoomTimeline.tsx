@@ -56,19 +56,19 @@ function describeEvent(event: SessionEvent): string {
   const p = event.payload ?? {};
   switch (event.event_type) {
     case "join":
-      return p.role ? `se unió como ${p.role}` : "se unió a la sala";
+      return p.role ? `joined as ${p.role}` : "joined the room";
     case "leave":
       return typeof p.duration_seconds === "number"
-        ? `salió (${p.duration_seconds}s en sala)`
-        : "salió de la sala";
+        ? `left (${p.duration_seconds}s in room)`
+        : "left the room";
     case "object_add":
-      return `agregó un objeto${p.type ? ` (${p.type})` : ""}`;
+      return `added an object${p.type ? ` (${p.type})` : ""}`;
     case "object_delete":
-      return "eliminó un objeto";
+      return "deleted an object";
     case "file_upload":
-      return `subió ${(p.filename as string) ?? "un archivo"}`;
+      return `uploaded ${(p.filename as string) ?? "a file"}`;
     case "snapshot":
-      return `creó un snapshot${p.triggered_by ? ` (${p.triggered_by})` : ""}`;
+      return `created a snapshot${p.triggered_by ? ` (${p.triggered_by})` : ""}`;
     default:
       return event.event_type;
   }
@@ -78,13 +78,13 @@ function describeEvent(event: SessionEvent): string {
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const sec = Math.round(diff / 1000);
-  if (sec < 60) return "hace un momento";
+  if (sec < 60) return "just now";
   const min = Math.round(sec / 60);
-  if (min < 60) return `hace ${min} min`;
+  if (min < 60) return `${min} min ago`;
   const hr = Math.round(min / 60);
-  if (hr < 24) return `hace ${hr} h`;
+  if (hr < 24) return `${hr} h ago`;
   const days = Math.round(hr / 24);
-  return `hace ${days} d`;
+  return `${days} d ago`;
 }
 
 // ─── Main component ─────────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ export function RoomTimeline({ roomId }: RoomTimelineProps) {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         <p className="font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-3">
-          Historial de actividad
+          Activity history
         </p>
 
         {isLoading && (
@@ -150,7 +150,7 @@ export function RoomTimeline({ roomId }: RoomTimelineProps) {
 
         {!isLoading && events.length === 0 && (
           <p className="text-xs text-gray-600 font-mono text-center mt-6">
-            Sin actividad todavía.
+            No activity yet.
           </p>
         )}
 
@@ -164,7 +164,7 @@ export function RoomTimeline({ roomId }: RoomTimelineProps) {
             disabled={isLoadingMore}
             className="w-full mt-3 py-2 px-3 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-500 hover:text-gray-300 hover:border-gray-600 transition-all disabled:opacity-50"
           >
-            {isLoadingMore ? "Cargando..." : "Cargar más"}
+            {isLoadingMore ? "Loading..." : "Load more"}
           </button>
         )}
       </div>
@@ -176,7 +176,7 @@ export function RoomTimeline({ roomId }: RoomTimelineProps) {
 function EventRow({ event }: { event: SessionEvent }) {
   const icon = EVENT_ICON[event.event_type] ?? "•";
   const color = EVENT_COLOR[event.event_type] ?? "text-gray-400";
-  const actor = event.user_id ? event.user_id.slice(0, 8) : "sistema";
+  const actor = event.user_id ? event.user_id.slice(0, 8) : "system";
 
   return (
     <div className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-800/50 transition-colors">

@@ -24,14 +24,14 @@ export function VoiceRoom({ roomId }: { roomId: string }) {
   if (loading)
     return (
       <Panel>
-        <p className="text-gray-500">Conectando voz…</p>
+        <p className="text-gray-500">Connecting voice…</p>
       </Panel>
     )
 
   if (error)
     return (
       <Panel>
-        <p className="text-red-400">Voz no disponible</p>
+        <p className="text-red-400">Voice unavailable</p>
         <p className="text-gray-600 text-[10px] mt-1">{error}</p>
       </Panel>
     )
@@ -50,7 +50,7 @@ export function VoiceRoom({ roomId }: { roomId: string }) {
       <RoomAudioRenderer />
 
       <Panel>
-        <p className="text-gray-500 mb-2">── voz ──</p>
+        <p className="text-gray-500 mb-2">── voice ──</p>
         <VoiceControls canPublish={data.can_publish} />
         <ParticipantList />
       </Panel>
@@ -72,7 +72,7 @@ function VoiceControls({ canPublish }: { canPublish: boolean }) {
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
 
   if (!canPublish) {
-    return <p className="mb-2 text-gray-600">Modo espectador (solo escuchas)</p>
+    return <p className="mb-2 text-gray-600">Spectator mode (listen only)</p>
   }
 
   const toggle = () =>
@@ -88,7 +88,7 @@ function VoiceControls({ canPublish }: { canPublish: boolean }) {
       }`}
     >
       <MicIcon on={isMicrophoneEnabled} />
-      {isMicrophoneEnabled ? 'Micrófono activo' : 'Silenciado'}
+      {isMicrophoneEnabled ? 'Mic on' : 'Muted'}
     </button>
   )
 }
@@ -98,7 +98,7 @@ function ParticipantList() {
   const participants = useParticipants()
 
   if (participants.length === 0) {
-    return <p className="text-gray-600">Nadie conectado aún</p>
+    return <p className="text-gray-600">No one connected yet</p>
   }
 
   return (
@@ -124,7 +124,7 @@ function ParticipantRow({ participant }: { participant: Participant }) {
       <span className="text-gray-300">
         {participant.name || participant.identity.slice(0, 8)}
       </span>
-      {participant.isLocal && <span className="text-gray-600">(tú)</span>}
+      {participant.isLocal && <span className="text-gray-600">(you)</span>}
       {muted && !participant.isLocal && <MicIcon on={false} small />}
     </li>
   )
