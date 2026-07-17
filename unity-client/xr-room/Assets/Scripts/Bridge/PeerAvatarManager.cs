@@ -67,12 +67,29 @@ namespace XRRooms.Bridge
                 : data.displayName;
             avatar.name = $"Avatar_{label}";
 
+            // Name tag above the avatar (follows parent; billboards via BillboardNameTag).
+            // TODO: si el nombre pudiera cambiar en caliente, habría que buscar el TextMesh hijo y actualizar su .text.
+            var nameTagGo = new GameObject("NameTag");
+            nameTagGo.transform.SetParent(avatar.transform, false);
+            nameTagGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+
+            var textMesh = nameTagGo.AddComponent<TextMesh>();
+            textMesh.text = label;
+            textMesh.anchor = TextAnchor.MiddleCenter;
+            textMesh.alignment = TextAlignment.Center;
+            textMesh.fontSize = 48;
+            textMesh.characterSize = 0.1f;
+            textMesh.color = Color.white;
+
+            nameTagGo.AddComponent<BillboardNameTag>();
+
             _avatars[data.userId] = avatar;
             Debug.Log($"[PeerAvatarManager] PEER_JOIN userId={data.userId} ({label})");
         }
 
         private void HandlePeerUpdate(PeerUpdateData data)
         {
+            Debug.Log($"[PeerAvatarManager] HandlePeerUpdate recibido userId={data.userId} pos=({data.position?.x},{data.position?.y},{data.position?.z})");
             if (!_avatars.TryGetValue(data.userId, out var avatar) || avatar == null)
             {
                 Debug.LogWarning(
