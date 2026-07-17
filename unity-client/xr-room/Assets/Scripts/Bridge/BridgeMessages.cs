@@ -75,4 +75,94 @@ namespace XRRooms.Bridge
         public string RoomId;
         public string UserId;
     }
+
+    // ── Peer transform protocol (React → Unity) ──────────────────────────────
+    // These use the "data" key (not "payload") to match the React side; they are
+    // a separate protocol namespace over the same channel, keyed by "type".
+
+    [Preserve]
+    [Serializable]
+    public class Vec3Data
+    {
+        public float x;
+        public float y;
+        public float z;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class QuatData
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerJoinData
+    {
+        public string userId;
+        public string displayName;
+        public Vec3Data position;
+        public QuatData rotation;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerJoinMessage
+    {
+        public string type;
+        public PeerJoinData data;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerUpdateData
+    {
+        public string userId;
+        public Vec3Data position;
+        public QuatData rotation;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerUpdateMessage
+    {
+        public string type;
+        public PeerUpdateData data;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerLeftData
+    {
+        public string userId;
+    }
+
+    [Preserve]
+    [Serializable]
+    public class PeerLeftMessage
+    {
+        public string type;
+        public PeerLeftData data;
+    }
+
+    // ── Local transform protocol (Unity → React) ─────────────────────────────
+    // Built in C# and serialized out; no [Preserve] needed (not deserialized).
+
+    [Serializable]
+    public class LocalTransformData
+    {
+        public Vec3Data position;
+        public QuatData rotation;
+    }
+
+    [Serializable]
+    public class LocalTransformMessage
+    {
+        public string type = "LOCAL_TRANSFORM";
+        public LocalTransformData data;
+    }
 }

@@ -14,8 +14,16 @@ namespace XRRooms.Bridge
 
         private SessionData _session;
 
+        /// <summary>True after a successful INIT stored a session.</summary>
+        public bool IsAuthenticated => _session != null;
+
         /// <summary>Fired after INIT validates jwt/roomId/userId and stores _session.</summary>
         public event Action<SessionData> OnSessionReceived;
+
+        /// <summary>Peer transform events (React → Unity), fire-and-forget (no OK/ERROR).</summary>
+        public event Action<PeerJoinData> OnPeerJoin;
+        public event Action<PeerUpdateData> OnPeerUpdate;
+        public event Action<PeerLeftData> OnPeerLeft;
 
         private void Start()
         {
@@ -58,6 +66,15 @@ namespace XRRooms.Bridge
                     break;
                 case "LOGOUT":
                     HandleLogout();
+                    break;
+                case "PEER_JOIN":
+                    HandlePeerJoin(json);
+                    break;
+                case "PEER_UPDATE":
+                    HandlePeerUpdate(json);
+                    break;
+                case "PEER_LEFT":
+                    HandlePeerLeft(json);
                     break;
                 default:
                     Debug.LogWarning($"[BridgeManager] Tipo desconocido: {peek.type}");
@@ -141,6 +158,68 @@ namespace XRRooms.Bridge
         {
             Debug.Log("[BridgeManager] LOGOUT — sesion limpiada");
             _session = null;
+        }
+
+        private void HandlePeerJoin(string json)
+        {
+            var msg = JsonUtility.FromJson<PeerJoinMessage>(json);
+            var data = msg?.data;
+            if (data == null || string.IsNullOrEmpty(data.userId))
+            {
+                Debug.LogWarning("[BridgeManager] PEER_JOIN sin userId");
+                return;
+            }
+
+            OnPeerJoin?.Invoke(data);
+        }
+
+        private void HandlePeerUpdate(string json)
+        {
+            var msg = JsonUtility.FromJson<PeerUpdateMessage>(json);
+            var data = msg?.data;
+            if (data == null || string.IsNullOrEmpty(data.userId))
+            {
+                Debug.LogWarning("[BridgeManager] PEER_UPDATE sin userId");
+                return;
+            }
+
+            OnPeerUpdate?.Invoke(data);
+        }
+
+        private void HandlePeerLeft(string json)
+        {
+            var msg = JsonUtility.FromJson<PeerLeftMessage>(json);
+            var data = msg?.data;
+            if (data == null || string.IsNullOrEmpty(data.userId))
+            {
+                Debug.LogWarning("[BridgeManager] PEER_LEFT sin userId");
+                return;
+            }
+
+            OnPeerLeft?.Invoke(data);
+        }
+
+        public void SendLocalTransform(Vector3 position, Quaternion rotation)
+        {
+            Dispatch(new LocalTransformMessage
+            {
+                data = new LocalTransformData
+                {
+                    position = new Vec3Data
+                    {
+                        x = position.x,
+                        y = position.y,
+                        z = position.z
+                    },
+                    rotation = new QuatData
+                    {
+                        x = rotation.x,
+                        y = rotation.y,
+                        z = rotation.z,
+                        w = rotation.w
+                    }
+                }
+            });
         }
 
         private void Dispatch<T>(T message)

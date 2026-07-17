@@ -1019,6 +1019,52 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2b0960a38d49646e59e2a4b209a0ef93, type: 3}
+--- !u!1 &696131768
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 696131770}
+  - component: {fileID: 696131769}
+  m_Layer: 0
+  m_Name: PeerAvatarManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &696131769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696131768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbda10a03f292b90b3b9d2afab9904ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::XRRooms.Bridge.PeerAvatarManager
+  bridgeManager: {fileID: 181704087}
+  avatarPrefab: {fileID: 5178697450973979312, guid: af91380b51b8bbc498e7dc4c4d45676b, type: 3}
+--- !u!4 &696131770
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 696131768}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &697572862 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 7e57e26a714804d3c9f1baa605131856, type: 3}
@@ -1587,6 +1633,11 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!4 &1007871448 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4684771153913254, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+  m_PrefabInstance: {fileID: 1400119426}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1056994842
 GameObject:
   m_ObjectHideFlags: 0
@@ -1886,6 +1937,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: WebXRCameraSet
       objectReference: {fileID: 0}
+    - target: {fileID: 1611361787474004, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1664295426898042, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4545079059221816, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -1942,6 +2001,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1611361787474004, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1400119433}
     - targetCorrespondingSourceObject: {fileID: 1799026754646168, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
       insertIndex: -1
       addedObject: {fileID: 870145183}
@@ -2059,6 +2121,32 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!1 &1400119431 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1611361787474004, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+  m_PrefabInstance: {fileID: 1400119426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1400119432 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4545079059221816, guid: c61e4de741d37461e85f25866d1ebd31, type: 3}
+  m_PrefabInstance: {fileID: 1400119426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1400119433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1400119431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d38e2c91b45ed7b25606cd7c8226652f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::XRRooms.Bridge.LocalTransformEmitter
+  bridgeManager: {fileID: 181704087}
+  desktopTransform: {fileID: 1007871448}
+  vrTransform: {fileID: 1400119432}
+  sendIntervalSeconds: 0.1
 --- !u!1001 &1451920843
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2893,3 +2981,4 @@ SceneRoots:
   - {fileID: 570556909}
   - {fileID: 2005427646}
   - {fileID: 181704088}
+  - {fileID: 696131770}
