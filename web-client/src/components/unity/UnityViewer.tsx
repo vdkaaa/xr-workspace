@@ -3,6 +3,18 @@ import { Unity, useUnityContext } from "react-unity-webgl";
 import { useWebXRBridge } from "./webxr";
 import "./UnityViewer.css";
 
+
+declare global {
+  interface Window {
+    __XRRoomUnity?: {
+      sendMessage: (gameObjectName: string, methodName: string, parameter?: string | number) => void;
+      sendToBridgeManager: (methodName: string, parameter?: string | number) => void;
+      getInstance: () => unknown;
+    };
+  }
+}
+
+
 const UNITY_BUILD_ROOT = "/unity-build";
 const UNITY_BUILD_BASE = `${UNITY_BUILD_ROOT}/Build`;
 const WEBXR_GAME_OBJECT_NAME = "WebXRCameraSet";
@@ -32,6 +44,11 @@ type LoadState = "checking" | "loading" | "loaded" | "error";
 
 interface UnityViewerProps {
   onLoaded?: () => void;
+  onBridgeReady?: (bridge: {
+    sendMessage: (gameObjectName: string, methodName: string, payload: string) => void;
+    addEventListener: (event: string, callback: (...args: any[]) => void) => void;
+    removeEventListener: (event: string, callback: (...args: any[]) => void) => void;
+  }) => void;
 }
 
 /** Unity 6 WebGL requires WebGL 2. Probe before loading the ~8 MB wasm payload. */
@@ -86,6 +103,7 @@ function LoadingOverlay({
 
 interface UnityPlayerProps {
   onLoaded?: () => void;
+  onBridgeReady?: UnityViewerProps["onBridgeReady"];
   onError: (message: string) => void;
 }
 
@@ -93,7 +111,7 @@ interface UnityPlayerProps {
  * Mounted only after server + WebGL preflight pass, so we don't spawn Unity
  * (and consume a WebGL context) while still verifying the build.
  */
-function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
+function UnityPlayer({ onLoaded, onBridgeReady, onError }: UnityPlayerProps) {
   const {
     unityProvider,
     isLoaded,
@@ -108,6 +126,8 @@ function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
+  const onBridgeReadyRef = useRef(onBridgeReady);
+  onBridgeReadyRef.current = onBridgeReady;
 
   const {
     isVRSupported,
@@ -142,6 +162,17 @@ function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
   useEffect(() => {
     if (isReady) onLoadedRef.current?.();
   }, [isReady]);
+
+  // isLoaded alone can flip at progress===1 before unityInstance exists; wait for both
+  // so sendMessage is not a no-op. Still stricter than isReady (bar at 100%).
+  useEffect(() => {
+    if (!isLoaded || !UNSAFE__unityInstance) return;
+    onBridgeReadyRef.current?.({
+      sendMessage,
+      addEventListener,
+      removeEventListener,
+    });
+  }, [isLoaded, UNSAFE__unityInstance, sendMessage, addEventListener, removeEventListener]);
 
   return (
     <>
@@ -198,7 +229,7 @@ function UnityPlayer({ onLoaded, onError }: UnityPlayerProps) {
   );
 }
 
-export default function UnityViewer({ onLoaded }: UnityViewerProps) {
+export default function UnityViewer({ onLoaded, onBridgeReady }: UnityViewerProps) {
   const [status, setStatus] = useState<LoadState>("checking");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [playerKey, setPlayerKey] = useState(0);
@@ -284,7 +315,12 @@ export default function UnityViewer({ onLoaded }: UnityViewerProps) {
     <div className="unity-viewer">
       {status === "checking" && <LoadingOverlay label="Verificando servidor y WebGL..." />}
       {status === "loading" && (
-        <UnityPlayer key={playerKey} onLoaded={onLoaded} onError={handlePlayerError} />
+        <UnityPlayer
+          key={playerKey}
+          onLoaded={onLoaded}
+          onBridgeReady={onBridgeReady}
+          onError={handlePlayerError}
+        />
       )}
     </div>
   );
