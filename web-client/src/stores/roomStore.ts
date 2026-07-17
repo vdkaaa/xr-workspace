@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { api, Room, CreateRoomPayload } from '../lib/api'
 
+// Shared in-flight join so RoomsPage.handleJoin (pre-navigate) and
+// RoomDetail's mount effect can both await the same POST /join without
+// duplicating it when they overlap for the same roomId.
+let joinInFlight: {
+  roomId: string
+  promise: Promise<void>
+} | null = null
+
 interface RoomStore {
   rooms: Room[]
   roomToken: string | null
+  joinedRoomId: string | null
+  joiningRoomId: string | null
   isLoading: boolean
   error: string | null
 
@@ -15,9 +25,11 @@ interface RoomStore {
   clearError: () => void
 }
 
-export const useRoomStore = create<RoomStore>((set) => ({
+export const useRoomStore = create<RoomStore>((set, get) => ({
   rooms: [],
   roomToken: null,
+  joinedRoomId: null,
+  joiningRoomId: null,
   isLoading: false,
   error: null,
 
@@ -45,15 +57,49 @@ export const useRoomStore = create<RoomStore>((set) => ({
   },
 
   joinRoom: async (token, roomId) => {
-    try {
-      const result = await api.rooms.join(token, roomId)
-      set({ roomToken: result.roomToken ?? null })
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
+    const state = get()
+
+    // Already joined this room in this session — skip a second POST.
+    if (
+      state.joinedRoomId === roomId &&
+      state.roomToken &&
+      joinInFlight?.roomId !== roomId
+    ) {
+      return
     }
+
+    // Same room already joining — await the shared in-flight request.
+    if (joinInFlight?.roomId === roomId) {
+      return joinInFlight.promise
+    }
+
+    const promise = (async () => {
+      set({ joiningRoomId: roomId })
+      try {
+        const result = await api.rooms.join(token, roomId)
+        set({
+          roomToken: result.roomToken ?? null,
+          joinedRoomId: roomId,
+          joiningRoomId: null,
+        })
+        console.log(
+          `[roomStore][DIAG] roomToken actualizado: ${result.roomToken?.slice(0, 12)}...`
+        )
+      } catch (err: any) {
+        set({ error: err.message, joiningRoomId: null })
+        throw err
+      } finally {
+        if (joinInFlight?.roomId === roomId) {
+          joinInFlight = null
+        }
+      }
+    })()
+
+    joinInFlight = { roomId, promise }
+    return promise
   },
 
-  clearRoomToken: () => set({ roomToken: null }),
+  clearRoomToken: () =>
+    set({ roomToken: null, joinedRoomId: null, joiningRoomId: null }),
   clearError: () => set({ error: null }),
 }))
