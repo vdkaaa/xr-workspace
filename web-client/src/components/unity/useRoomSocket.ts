@@ -308,6 +308,7 @@ export function useRoomSocket(params: {
       if (type === "LEAVE") {
         const from = envelope.from;
         if (typeof from !== "string" || !from) return;
+        console.log(`[useRoomSocket][DIAG] LEAVE recibido de ${from}`);
 
         setPeers((prev) => {
           if (!(from in prev)) return prev;
@@ -366,6 +367,7 @@ export function useRoomSocket(params: {
     let cancelled = false;
 
     const connect = () => {
+      console.log(`[useRoomSocket][DIAG] connect() llamado. failCount=${failCountRef.current}`);
       if (cancelled) return;
 
       clearReconnectTimer();
@@ -424,6 +426,7 @@ export function useRoomSocket(params: {
       };
 
       ws.onclose = () => {
+        console.log(`[useRoomSocket][DIAG] onclose disparado. status previo=${statusRef.current}, intentional=${intentionalCloseRef.current}, failCount=${failCountRef.current}`);
         if (cancelled || wsRef.current !== ws) return;
         wsRef.current = null;
 
@@ -463,6 +466,7 @@ export function useRoomSocket(params: {
     // avoids two timers racing / duplicating work every frame.
     const syncIntervalId = setInterval(() => {
       const now = Date.now();
+      console.log(`[useRoomSocket][DIAG] tick. document.hidden=${document.hidden}, now=${now}`);
 
       // Evict peers that went silent (local LEAVE; backend may never send one).
       setPeers((prev) => {
@@ -470,6 +474,7 @@ export function useRoomSocket(params: {
         const next: Record<string, PeerState> = {};
         for (const [id, peer] of Object.entries(prev)) {
           if (now - peer.lastSeenAt > PEER_TIMEOUT_MS) {
+            console.log(`[useRoomSocket][DIAG] Evictando peer ${id} por timeout. Silencio de ${now - peer.lastSeenAt}ms (limite ${PEER_TIMEOUT_MS}ms)`);
             changed = true;
             continue;
           }

@@ -32,6 +32,9 @@ import { useUnityBridge } from "../components/unity/useUnityBridge";
 import { useRoomSocket } from "../components/unity/useRoomSocket";
 import { useUnityPeerBridge } from "../components/unity/useUnityPeerBridge";
 
+// DIAG: module-level so remounts keep counting (useRef would reset to 0).
+let roomDetailMountCount = 0;
+
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
 // Por eso el fetch de la sala ocurre aquí, antes del provider.
@@ -45,6 +48,12 @@ export function RoomDetail() {
   const currentRoom = rooms.find((r) => r.id === id);
 
   useEffect(() => {
+    roomDetailMountCount += 1;
+    console.log(`[RoomDetail][DIAG] MOUNT #${roomDetailMountCount} de RoomDetail (outer), id=${id}`);
+  }, []);
+
+  useEffect(() => {
+    console.log(`[RoomDetail][DIAG] effect de join corrió (mount #${roomDetailMountCount}). token=${token?.slice(0,8)}..., id=${id}`);
     if (token) {
       fetchRooms(token);
       if (id) joinRoom(token, id); // garantiza el roomToken en el store (rol de sala)
