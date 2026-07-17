@@ -30,6 +30,7 @@ import { SummaryPanel } from "../components/room/SummaryPanel";
 import UnityViewer from "../components/unity/UnityViewer";
 import { useUnityBridge } from "../components/unity/useUnityBridge";
 import { useRoomSocket } from "../components/unity/useRoomSocket";
+import { useUnityPeerBridge } from "../components/unity/useUnityPeerBridge";
 
 // ─── Outer shell (sin Liveblocks) ─────────────────────────────────────────────
 // El provider necesita el roomId, que viene del store.
@@ -103,6 +104,7 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
   const {
     status: wsStatus,
     peers,
+    updatePosition,
     errorMessage: wsError,
   } = useRoomSocket({
     roomId,
@@ -110,6 +112,7 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
     displayName,
     enabled: !!(roomId && userId),
   });
+  const peerBridge = useUnityPeerBridge({ peers, updatePosition });
 
   const unityStatusLabel =
     status === "idle"
@@ -239,7 +242,12 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
         {jwt && userId ? (
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="w-full h-full max-h-full [&_.unity-viewer]:h-full [&_.unity-viewer]:aspect-auto [&_.unity-viewer]:rounded-lg">
-              <UnityViewer onBridgeReady={registerBridge} />
+              <UnityViewer
+                onBridgeReady={(bridge) => {
+                  registerBridge(bridge);
+                  peerBridge.registerBridge(bridge);
+                }}
+              />
             </div>
           </div>
         ) : (
