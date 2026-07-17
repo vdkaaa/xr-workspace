@@ -8,8 +8,10 @@ import { useRoomStore } from "../../stores/roomStore";
  * RoomDetail (and stores `roomToken`). Calling it again would duplicate the
  * backend request. This hook only waits for that token.
  *
- * Why we only reply JOIN once per peer: without a Set of answered peers,
- * mutual JOIN replies loop forever (A→B, B→A, A→B…).
+ * Why we only reply JOIN once per peer session: without a Set of answered
+ * keys, mutual JOIN replies loop forever (A→B, B→A, A→B…). Keys are
+ * `${from}:${sessionId}` when present so a reconnect (new sessionId) gets a
+ * fresh reply, while the same session still stops at 2 hops.
  */
 
 export type RoomSocketStatus =
@@ -20,6 +22,16 @@ export type RoomSocketStatus =
   | "reconnecting"
   | "error";
 
+export type Vec3 = { x: number; y: number; z: number };
+export type Quat = { x: number; y: number; z: number; w: number };
+export type PeerState = {
+  userId: string;
+  displayName: string;
+  position: Vec3;
+  rotation: Quat;
+  lastSeenAt: number;
+};
+
 type RoomEnvelope = {
   type: string;
   from: string;
@@ -29,6 +41,33 @@ type RoomEnvelope = {
 
 const BACKOFF_MS = [2000, 4000, 8000] as const;
 const MAX_FAILURES = 5;
+/** ~80ms tick ≈ 12.5 Hz ceiling; keeps throttle + keep-alive on one timer. */
+const SYNC_TICK_MS = 80;
+/** Resend last transform if nothing changed, so peers know we are still alive. */
+const KEEP_ALIVE_MS = 1000;
+/**
+ * Local-only stale peer eviction. Backend does not guarantee a LEAVE on
+ * disconnect (see protocolo-multiplayer-ws.md); we drop peers after 8s silence.
+ */
+const PEER_TIMEOUT_MS = 8000;
+
+const DEFAULT_POSITION: Vec3 = { x: 0, y: 0, z: 0 };
+const DEFAULT_ROTATION: Quat = { x: 0, y: 0, z: 0, w: 1 };
+
+function transformsEqual(
+  a: { position: Vec3; rotation: Quat },
+  b: { position: Vec3; rotation: Quat }
+): boolean {
+  return (
+    a.position.x === b.position.x &&
+    a.position.y === b.position.y &&
+    a.position.z === b.position.z &&
+    a.rotation.x === b.rotation.x &&
+    a.rotation.y === b.rotation.y &&
+    a.rotation.z === b.rotation.z &&
+    a.rotation.w === b.rotation.w
+  );
+}
 
 function toWsBaseUrl(apiUrl: string): string {
   return apiUrl.replace(/^http/i, "ws").replace(/\/$/, "");
@@ -41,7 +80,8 @@ export function useRoomSocket(params: {
   enabled: boolean;
 }): {
   status: RoomSocketStatus;
-  knownPeers: string[];
+  peers: Record<string, PeerState>;
+  updatePosition: (position: Vec3, rotation: Quat) => void;
   send: (envelope: { type: string; data: any }) => void;
   errorMessage: string | null;
 } {
@@ -49,15 +89,28 @@ export function useRoomSocket(params: {
   const roomToken = useRoomStore((s) => s.roomToken);
 
   const [status, setStatus] = useState<RoomSocketStatus>("idle");
-  const [knownPeers, setKnownPeers] = useState<string[]>([]);
+  const [peers, setPeers] = useState<Record<string, PeerState>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const statusRef = useRef<RoomSocketStatus>("idle");
   const answeredJoinsRef = useRef<Set<string>>(new Set());
+  // Regenerated in connect() so each socket session (incl. reconnect) has a new id.
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
   const failCountRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intentionalCloseRef = useRef(false);
+
+  // Latest transform requested by the app; sync tick decides when to send.
+  const latestLocalTransformRef = useRef<{
+    position: Vec3;
+    rotation: Quat;
+  }>({ position: { ...DEFAULT_POSITION }, rotation: { ...DEFAULT_ROTATION } });
+  const lastSentTransformRef = useRef<{
+    position: Vec3;
+    rotation: Quat;
+  } | null>(null);
+  const lastSentAtRef = useRef(0);
 
   // Keep latest values for handlers / cleanup without re-subscribing mid-flight
   const userIdRef = useRef(userId);
@@ -79,14 +132,16 @@ export function useRoomSocket(params: {
   }, []);
 
   const buildJoinEnvelope = useCallback((): RoomEnvelope => {
+    const { position, rotation } = latestLocalTransformRef.current;
     return {
       type: "JOIN",
       from: userIdRef.current!,
       ts: Date.now(),
       data: {
         displayName: displayNameRef.current,
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0, w: 1 },
+        sessionId: sessionIdRef.current,
+        position: { ...position },
+        rotation: { ...rotation },
       },
     };
   }, []);
@@ -111,6 +166,13 @@ export function useRoomSocket(params: {
     [sendRaw]
   );
 
+  const updatePosition = useCallback((position: Vec3, rotation: Quat) => {
+    latestLocalTransformRef.current = {
+      position: { ...position },
+      rotation: { ...rotation },
+    };
+  }, []);
+
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       let envelope: Partial<RoomEnvelope>;
@@ -131,20 +193,128 @@ export function useRoomSocket(params: {
         if (typeof from !== "string" || !from) return;
         if (from === userIdRef.current) return;
 
-        setKnownPeers((prev) =>
-          prev.includes(from) ? prev : [...prev, from]
-        );
+        const data = envelope.data ?? {};
+        const displayName =
+          typeof data.displayName === "string" && data.displayName
+            ? data.displayName
+            : from;
+        const position: Vec3 =
+          data.position &&
+          typeof data.position.x === "number" &&
+          typeof data.position.y === "number" &&
+          typeof data.position.z === "number"
+            ? {
+                x: data.position.x,
+                y: data.position.y,
+                z: data.position.z,
+              }
+            : { ...DEFAULT_POSITION };
+        const rotation: Quat =
+          data.rotation &&
+          typeof data.rotation.x === "number" &&
+          typeof data.rotation.y === "number" &&
+          typeof data.rotation.z === "number" &&
+          typeof data.rotation.w === "number"
+            ? {
+                x: data.rotation.x,
+                y: data.rotation.y,
+                z: data.rotation.z,
+                w: data.rotation.w,
+              }
+            : { ...DEFAULT_ROTATION };
 
-        // Reply with our JOIN only once per peer — avoids an infinite reply loop
-        if (!answeredJoinsRef.current.has(from)) {
-          answeredJoinsRef.current.add(from);
+        setPeers((prev) => ({
+          ...prev,
+          [from]: {
+            userId: from,
+            displayName,
+            position,
+            rotation,
+            lastSeenAt: Date.now(),
+          },
+        }));
+
+        // Key by from+sessionId so a reconnect (new sessionId) gets a reply;
+        // same session still answers only once (2-hop handshake).
+        const incomingSessionId =
+          typeof data.sessionId === "string" && data.sessionId
+            ? data.sessionId
+            : null;
+        const answerKey = incomingSessionId
+          ? `${from}:${incomingSessionId}`
+          : from;
+
+        if (!answeredJoinsRef.current.has(answerKey)) {
+          answeredJoinsRef.current.add(answerKey);
           sendRaw(buildJoinEnvelope());
         }
         return;
       }
 
-      if (type === "AVATAR_UPDATE" || type === "LEAVE") {
-        console.log("[useRoomSocket] recibido:", envelope);
+      if (type === "AVATAR_UPDATE") {
+        const from = envelope.from;
+        if (typeof from !== "string" || !from) return;
+        if (from === userIdRef.current) return;
+
+        setPeers((prev) => {
+          const existing = prev[from];
+          if (!existing) {
+            console.warn(
+              "[useRoomSocket] AVATAR_UPDATE from unknown peer (no JOIN yet):",
+              from
+            );
+            return prev;
+          }
+
+          const data = envelope.data ?? {};
+          const position: Vec3 =
+            data.position &&
+            typeof data.position.x === "number" &&
+            typeof data.position.y === "number" &&
+            typeof data.position.z === "number"
+              ? {
+                  x: data.position.x,
+                  y: data.position.y,
+                  z: data.position.z,
+                }
+              : existing.position;
+          const rotation: Quat =
+            data.rotation &&
+            typeof data.rotation.x === "number" &&
+            typeof data.rotation.y === "number" &&
+            typeof data.rotation.z === "number" &&
+            typeof data.rotation.w === "number"
+              ? {
+                  x: data.rotation.x,
+                  y: data.rotation.y,
+                  z: data.rotation.z,
+                  w: data.rotation.w,
+                }
+              : existing.rotation;
+
+          return {
+            ...prev,
+            [from]: {
+              ...existing,
+              position,
+              rotation,
+              lastSeenAt: Date.now(),
+            },
+          };
+        });
+        return;
+      }
+
+      if (type === "LEAVE") {
+        const from = envelope.from;
+        if (typeof from !== "string" || !from) return;
+
+        setPeers((prev) => {
+          if (!(from in prev)) return prev;
+          const next = { ...prev };
+          delete next[from];
+          return next;
+        });
         return;
       }
 
@@ -178,7 +348,9 @@ export function useRoomSocket(params: {
       }
       answeredJoinsRef.current.clear();
       failCountRef.current = 0;
-      setKnownPeers([]);
+      lastSentTransformRef.current = null;
+      lastSentAtRef.current = 0;
+      setPeers({});
       setErrorMessage(null);
       setStatus("idle");
       return;
@@ -207,8 +379,11 @@ export function useRoomSocket(params: {
         intentionalCloseRef.current = false;
       }
 
+      sessionIdRef.current = crypto.randomUUID();
       answeredJoinsRef.current.clear();
-      setKnownPeers([]);
+      lastSentTransformRef.current = null;
+      lastSentAtRef.current = 0;
+      setPeers({});
       setErrorMessage(null);
 
       const token = roomTokenRef.current;
@@ -284,9 +459,64 @@ export function useRoomSocket(params: {
 
     connect();
 
+    // One interval for outbound throttle+keep-alive AND local peer timeout —
+    // avoids two timers racing / duplicating work every frame.
+    const syncIntervalId = setInterval(() => {
+      const now = Date.now();
+
+      // Evict peers that went silent (local LEAVE; backend may never send one).
+      setPeers((prev) => {
+        let changed = false;
+        const next: Record<string, PeerState> = {};
+        for (const [id, peer] of Object.entries(prev)) {
+          if (now - peer.lastSeenAt > PEER_TIMEOUT_MS) {
+            changed = true;
+            continue;
+          }
+          next[id] = peer;
+        }
+        return changed ? next : prev;
+      });
+
+      if (statusRef.current !== "connected") return;
+
+      const uid = userIdRef.current;
+      if (!uid) return;
+
+      const latest = latestLocalTransformRef.current;
+      const lastSent = lastSentTransformRef.current;
+      const changed = !lastSent || !transformsEqual(latest, lastSent);
+      const keepAliveDue =
+        lastSentAtRef.current > 0 &&
+        now - lastSentAtRef.current >= KEEP_ALIVE_MS;
+
+      // First tick after connect: send even if caller never called updatePosition
+      // (defaults 0,0,0 / identity) so peers get a baseline keep-alive stream.
+      const shouldSend =
+        changed || keepAliveDue || lastSentAtRef.current === 0;
+
+      if (!shouldSend) return;
+
+      sendRaw({
+        type: "AVATAR_UPDATE",
+        from: uid,
+        ts: now,
+        data: {
+          position: { ...latest.position },
+          rotation: { ...latest.rotation },
+        },
+      });
+      lastSentTransformRef.current = {
+        position: { ...latest.position },
+        rotation: { ...latest.rotation },
+      };
+      lastSentAtRef.current = now;
+    }, SYNC_TICK_MS);
+
     return () => {
       cancelled = true;
       intentionalCloseRef.current = true;
+      clearInterval(syncIntervalId);
       clearReconnectTimer();
       const ws = wsRef.current;
       if (ws && ws.readyState === WebSocket.OPEN && userIdRef.current) {
@@ -322,7 +552,8 @@ export function useRoomSocket(params: {
 
   return {
     status,
-    knownPeers,
+    peers,
+    updatePosition,
     send,
     errorMessage,
   };

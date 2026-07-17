@@ -102,7 +102,7 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
     useUnityBridge({ jwt, roomId, userId });
   const {
     status: wsStatus,
-    knownPeers,
+    peers,
     errorMessage: wsError,
   } = useRoomSocket({
     roomId,
@@ -207,10 +207,16 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
             <>
               <span
                 className="text-[10px] font-mono text-gray-500 max-w-[220px] truncate"
-                title={knownPeers.join(", ")}
+                title={Object.keys(peers)
+                  .map((id) => peers[id].displayName || id)
+                  .join(", ")}
               >
-                peers ({knownPeers.length}):{" "}
-                {knownPeers.length ? knownPeers.join(", ") : "—"}
+                peers ({Object.keys(peers).length}):{" "}
+                {Object.keys(peers).length
+                  ? Object.keys(peers)
+                      .map((id) => peers[id].displayName || id)
+                      .join(", ")
+                  : "—"}
               </span>
               <button
                 onClick={() => setShowDebug((v) => !v)}
