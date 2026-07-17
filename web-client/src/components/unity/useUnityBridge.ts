@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { UnityMessageRouter } from "./useUnityMessageRouter";
 
 const BRIDGE_GAME_OBJECT = "BridgeManager";
 const BRIDGE_METHOD = "OnReactMessage";
-const UNITY_EVENT = "UnityMessage";
 
 export type BridgeApi = {
   sendMessage: (
@@ -35,11 +35,6 @@ type ReactToUnityMessage =
   | { type: "CHANGE_ROOM"; payload: { roomId: string } }
   | { type: "LOGOUT" };
 
-type UnityToReactMessage =
-  | { type: "READY" }
-  | { type: "OK"; payload?: any }
-  | { type: "ERROR"; payload: { message: string } };
-
 function sendToUnity(bridge: BridgeApi, msg: ReactToUnityMessage) {
   bridge.sendMessage(
     BRIDGE_GAME_OBJECT,
@@ -55,11 +50,16 @@ function sendToUnity(bridge: BridgeApi, msg: ReactToUnityMessage) {
  * runtime can accept SendMessage. BridgeManager may not exist yet in the
  * scene graph — sending INIT earlier is a silent no-op / lost auth.
  * Unity emits READY once the GameObject is live; only then is INIT safe.
+ *
+ * Incoming UnityMessage traffic is owned by useUnityMessageRouter — this
+ * hook only subscribes via messageRouter.onMessage and never calls
+ * bridge.addEventListener itself.
  */
 export function useUnityBridge(params: {
   jwt: string | null;
   roomId: string | null;
   userId: string | null;
+  messageRouter: UnityMessageRouter;
 }): {
   status: UnityBridgeStatus;
   errorMessage: string | null;
@@ -67,7 +67,7 @@ export function useUnityBridge(params: {
   changeRoom: (roomId: string) => void;
   logout: () => void;
 } {
-  const { jwt, roomId, userId } = params;
+  const { jwt, roomId, userId, messageRouter } = params;
 
   const [status, setStatus] = useState<UnityBridgeStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -75,66 +75,43 @@ export function useUnityBridge(params: {
   const [hasUnityReady, setHasUnityReady] = useState(false);
 
   const bridgeRef = useRef<BridgeApi | null>(null);
-  const listenerRef = useRef<((...args: any[]) => void) | null>(null);
   const statusRef = useRef(status);
   statusRef.current = status;
   const initSentRef = useRef(false);
 
-  const detachListener = useCallback(() => {
-    const bridge = bridgeRef.current;
-    const listener = listenerRef.current;
-    if (bridge && listener) {
-      bridge.removeEventListener(UNITY_EVENT, listener);
-    }
-    listenerRef.current = null;
+  useEffect(() => {
+    return messageRouter.onMessage((type, payload) => {
+      if (type === "READY") {
+        // BridgeManager is alive — safe to auth on the next INIT effect.
+        initSentRef.current = false;
+        setHasUnityReady(true);
+        setErrorMessage(null);
+        setStatus("authenticating");
+        return;
+      }
+
+      if (type === "OK") {
+        setErrorMessage(null);
+        setStatus("ready");
+        return;
+      }
+
+      if (type === "ERROR") {
+        initSentRef.current = false;
+        setStatus("error");
+        setErrorMessage(payload?.message ?? "Unity bridge error");
+      }
+    });
+  }, [messageRouter]);
+
+  // Local side effects only — does NOT addEventListener("UnityMessage").
+  const registerBridge = useCallback((bridge: BridgeApi) => {
+    bridgeRef.current = bridge;
+    initSentRef.current = false;
+    setHasUnityReady(false);
+    setErrorMessage(null);
+    setStatus("waiting-ready");
   }, []);
-
-  const handleUnityMessage = useCallback((...args: any[]) => {
-    const raw = args[0];
-    if (typeof raw !== "string") return;
-
-    let msg: UnityToReactMessage;
-    try {
-      msg = JSON.parse(raw) as UnityToReactMessage;
-    } catch {
-      return;
-    }
-
-    if (msg.type === "READY") {
-      // BridgeManager is alive — safe to auth on the next INIT effect.
-      initSentRef.current = false;
-      setHasUnityReady(true);
-      setErrorMessage(null);
-      setStatus("authenticating");
-      return;
-    }
-
-    if (msg.type === "OK") {
-      setErrorMessage(null);
-      setStatus("ready");
-      return;
-    }
-
-    if (msg.type === "ERROR") {
-      initSentRef.current = false;
-      setStatus("error");
-      setErrorMessage(msg.payload?.message ?? "Unity bridge error");
-    }
-  }, []);
-
-  const registerBridge = useCallback(
-    (bridge: BridgeApi) => {
-      detachListener();
-      bridgeRef.current = bridge;
-      listenerRef.current = handleUnityMessage;
-      bridge.addEventListener(UNITY_EVENT, handleUnityMessage);
-      initSentRef.current = false;
-      setHasUnityReady(false);
-      setErrorMessage(null);
-      setStatus("waiting-ready");
-    },
-    [detachListener, handleUnityMessage]
-  );
 
   // Send INIT once we have both READY and session credentials.
   useEffect(() => {
@@ -154,10 +131,9 @@ export function useUnityBridge(params: {
 
   useEffect(() => {
     return () => {
-      detachListener();
       bridgeRef.current = null;
     };
-  }, [detachListener]);
+  }, []);
 
   const changeRoom = useCallback((nextRoomId: string) => {
     if (statusRef.current !== "ready") return;

@@ -167,6 +167,7 @@ export function useRoomSocket(params: {
   );
 
   const updatePosition = useCallback((position: Vec3, rotation: Quat) => {
+    console.log(`[useRoomSocket][DIAG] updatePosition llamado con`, position);
     latestLocalTransformRef.current = {
       position: { ...position },
       rotation: { ...rotation },
@@ -502,6 +503,7 @@ export function useRoomSocket(params: {
 
       if (!shouldSend) return;
 
+      console.log(`[useRoomSocket][DIAG] AVATAR_UPDATE saliente pos=`, latest.position);
       sendRaw({
         type: "AVATAR_UPDATE",
         from: uid,

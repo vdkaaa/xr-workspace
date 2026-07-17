@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { createMockBridge } from "../components/unity/__mocks__/mockBridge";
 import { useUnityBridge } from "../components/unity/useUnityBridge";
+import { useUnityMessageRouter } from "../components/unity/useUnityMessageRouter";
 
 const TEST_JWT = "test-jwt-placeholder";
 const TEST_ROOM_ID = "room-demo-001";
 const TEST_USER_ID = "user-demo-001";
 
 export default function UnityBridgeTestPage() {
+  const messageRouter = useUnityMessageRouter();
   const { status, errorMessage, registerBridge, changeRoom, logout } =
     useUnityBridge({
       jwt: TEST_JWT,
       roomId: TEST_ROOM_ID,
       userId: TEST_USER_ID,
+      messageRouter,
     });
 
   const [currentRoomId, setCurrentRoomId] = useState(TEST_ROOM_ID);
@@ -24,8 +27,10 @@ export default function UnityBridgeTestPage() {
   };
 
   useEffect(() => {
-    registerBridge(createMockBridge());
-  }, [registerBridge]);
+    const mockBridge = createMockBridge();
+    messageRouter.registerBridge(mockBridge);
+    registerBridge(mockBridge);
+  }, [messageRouter, registerBridge]);
 
   useEffect(() => {
     if (status === "authenticating") markEvent("READY recibido");

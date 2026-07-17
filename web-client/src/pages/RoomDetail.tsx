@@ -31,6 +31,7 @@ import UnityViewer from "../components/unity/UnityViewer";
 import { useUnityBridge } from "../components/unity/useUnityBridge";
 import { useRoomSocket } from "../components/unity/useRoomSocket";
 import { useUnityPeerBridge } from "../components/unity/useUnityPeerBridge";
+import { useUnityMessageRouter } from "../components/unity/useUnityMessageRouter";
 
 // DIAG: module-level so remounts keep counting (useRef would reset to 0).
 let roomDetailMountCount = 0;
@@ -108,8 +109,9 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const displayName =
     useAuthStore((s) => s.user?.name || s.user?.email) || userId || "";
+  const messageRouter = useUnityMessageRouter();
   const { status, errorMessage, registerBridge, changeRoom, logout } =
-    useUnityBridge({ jwt, roomId, userId });
+    useUnityBridge({ jwt, roomId, userId, messageRouter });
   const {
     status: wsStatus,
     peers,
@@ -121,7 +123,7 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
     displayName,
     enabled: !!(roomId && userId),
   });
-  const peerBridge = useUnityPeerBridge({ peers, updatePosition });
+  const peerBridge = useUnityPeerBridge({ peers, updatePosition, messageRouter });
 
   const unityStatusLabel =
     status === "idle"
@@ -253,6 +255,7 @@ function RoomContent({ roomName, roomId }: RoomContentProps) {
             <div className="w-full h-full max-h-full [&_.unity-viewer]:h-full [&_.unity-viewer]:aspect-auto [&_.unity-viewer]:rounded-lg">
               <UnityViewer
                 onBridgeReady={(bridge) => {
+                  messageRouter.registerBridge(bridge);
                   registerBridge(bridge);
                   peerBridge.registerBridge(bridge);
                 }}
