@@ -6,6 +6,7 @@ import { RoomsPage } from './pages/RoomsPage'
 import { api } from './lib/api'
 import { RoomDetail } from './pages/RoomDetail'
 import UnityTestPage from './pages/UnityTestPage'
+import UnityBridgeTestPage from './pages/UnityBridgeTestPage'
 // ─── Ruta protegida — redirige a /login si no hay sesión ──────────────────────
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -65,8 +66,10 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/* Ruta pública de prueba — sin guard, no requiere sesión */}
+        {/* Rutas públicas de prueba — sin guard, no requieren sesión */}
         <Route path="/unity-test" element={<UnityTestPage />} />
+        <Route path="/unity-bridge-test" element={<UnityBridgeTestPage />} />
+
 
         <Route path="/" element={
           <Navigate to={user ? '/rooms' : '/login'} replace />

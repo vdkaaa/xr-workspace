@@ -37,7 +37,7 @@ function getInitialPresence(displayName: string): Presence {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function LiveblocksRoomProvider({ roomId, children }: Props) {
   const user = useAuthStore((s) => s.user);
-  const displayName = user?.name ?? user?.email?.split("@")[0] ?? "Usuario";
+  const displayName = user?.name ?? user?.email?.split("@")[0] ?? "User";
 
   return (
     <RoomProvider
@@ -75,7 +75,7 @@ function RoomConnecting() {
       <div className="flex flex-col items-center gap-3">
         <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
         <span className="text-sm text-gray-400 font-mono">
-          Conectando sala...
+          Connecting to room...
         </span>
       </div>
     </div>

@@ -33,7 +33,7 @@ export function SummaryPanel({ roomId }: { roomId: string }) {
       })
 
       if (!res.ok || !res.body) {
-        throw new Error('No se pudo iniciar el resumen')
+        throw new Error('Could not start the summary')
       }
 
       // Leemos el stream SSE manualmente.
@@ -70,13 +70,13 @@ export function SummaryPanel({ roomId }: { roomId: string }) {
   return (
     <div className="absolute top-4 left-4 z-20 w-80 max-w-[80vw] rounded-lg border border-gray-700 bg-gray-900/90 p-3 font-mono text-xs text-gray-300">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-gray-500">── resumen IA ──</span>
+        <span className="text-gray-500">── AI summary ──</span>
         <button
           onClick={generate}
           disabled={running}
           className="rounded bg-violet-600 px-2 py-1 text-white transition hover:bg-violet-500 disabled:opacity-50"
         >
-          {running ? 'Generando…' : 'Resumir sesión'}
+          {running ? 'Generating…' : 'Summarize session'}
         </button>
       </div>
 
@@ -89,7 +89,7 @@ export function SummaryPanel({ roomId }: { roomId: string }) {
       ) : (
         !running && !error && (
           <p className="text-gray-600">
-            Genera un resumen de la actividad de esta sala con Claude.
+            Generate a summary of this room's activity with Claude.
           </p>
         )
       )}

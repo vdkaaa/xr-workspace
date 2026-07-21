@@ -32,7 +32,7 @@ export function PresenceAvatars() {
         className={`w-2 h-2 rounded-full flex-shrink-0 ${
           isConnected ? "bg-green-400" : "bg-yellow-400 animate-pulse"
         }`}
-        title={isConnected ? "Conectado" : "Reconectando..."}
+        title={isConnected ? "Connected" : "Reconnecting..."}
       />
 
       {/* Avatar propio */}
@@ -57,7 +57,7 @@ export function PresenceAvatars() {
       {/* Contador si hay muchos */}
       {others.length > 0 && (
         <span className="text-xs text-gray-500 font-mono ml-1">
-          {others.length + 1} en sala
+          {others.length + 1} in room
         </span>
       )}
     </div>
@@ -91,7 +91,7 @@ function Avatar({ name, avatarUrl, isSelf = false, status }: AvatarProps) {
       className={`relative w-8 h-8 rounded-full ring-2 ${
         isSelf ? "ring-green-400" : statusColor
       } overflow-hidden flex-shrink-0 transition-all`}
-      title={isSelf ? `${name} (tú)` : name}
+      title={isSelf ? `${name} (you)` : name}
     >
       {avatarUrl ? (
         <img

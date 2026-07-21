@@ -40,7 +40,7 @@ export function RoomDashboard({ roomId }: RoomDashboardProps) {
       <button
         onClick={() => setIsOpen((v) => !v)}
         className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-900/80 border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-all font-mono text-xs"
-        title={isOpen ? "Cerrar panel" : "Abrir panel"}
+        title={isOpen ? "Close panel" : "Open panel"}
       >
         {isOpen ? "→" : "←"}
       </button>
@@ -54,19 +54,19 @@ export function RoomDashboard({ roomId }: RoomDashboardProps) {
               active={activeTab === "participants"}
               onClick={() => setActiveTab("participants")}
             >
-              Participantes
+              Participants
             </TabButton>
             <TabButton
               active={activeTab === "objects"}
               onClick={() => setActiveTab("objects")}
             >
-              Objetos
+              Objects
             </TabButton>
             <TabButton
               active={activeTab === "timeline"}
               onClick={() => setActiveTab("timeline")}
             >
-              Historial
+              History
             </TabButton>
           </div>
 
@@ -112,9 +112,9 @@ function ParticipantsTab() {
   const self = useSelf();
 
   const statusLabel = {
-    idle: "en sala",
-    drawing: "dibujando",
-    viewing: "viendo",
+    idle: "in room",
+    drawing: "drawing",
+    viewing: "viewing",
   };
 
   const statusColor = {
@@ -126,7 +126,7 @@ function ParticipantsTab() {
   return (
     <div className="p-3 space-y-1">
       <p className="font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-3">
-        {others.length + 1} conectados
+        {others.length + 1} connected
       </p>
 
       {/* Usuario propio */}
@@ -153,7 +153,7 @@ function ParticipantsTab() {
 
       {others.length === 0 && (
         <p className="text-xs text-gray-600 font-mono mt-4 text-center">
-          Solo tú en la sala
+          Just you in the room
         </p>
       )}
     </div>
@@ -196,7 +196,7 @@ function ParticipantRow({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-200 truncate font-medium">
-          {name} {isSelf && <span className="text-gray-600">(tú)</span>}
+          {name} {isSelf && <span className="text-gray-600">(you)</span>}
         </p>
         <p className={`text-[10px] font-mono ${statusColor[status]}`}>
           {statusLabel[status]}
@@ -289,10 +289,10 @@ function ObjectsTab({ roomId }: { roomId: string }) {
           {isUploading ? (
             <>
               <span className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
-              Subiendo...
+              Uploading...
             </>
           ) : (
-            <>↑ Subir archivo</>
+            <>↑ Upload file</>
           )}
           <input
             type="file"
@@ -303,14 +303,14 @@ function ObjectsTab({ roomId }: { roomId: string }) {
           />
         </label>
         <p className="text-[10px] text-gray-700 font-mono mt-1.5 text-center">
-          imágenes y PDF · máx 10MB
+          images and PDF · max 10MB
         </p>
       </div>
 
       {/* Objects list */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
         <p className="font-mono text-[10px] text-gray-600 uppercase tracking-widest mb-3">
-          {objects.length} objeto{objects.length !== 1 ? "s" : ""}
+          {objects.length} object{objects.length !== 1 ? "s" : ""}
         </p>
 
         {isLoading && (
@@ -321,8 +321,8 @@ function ObjectsTab({ roomId }: { roomId: string }) {
 
         {!isLoading && objects.length === 0 && (
           <p className="text-xs text-gray-600 font-mono text-center mt-6">
-            Sin objetos en la sala.
-            <br />Sube un archivo para empezar.
+            No objects in the room.
+            <br />Upload a file to get started.
           </p>
         )}
 
@@ -340,7 +340,7 @@ function ObjectRow({ object, icon }: { object: SpatialObject; icon: string }) {
     (object.metadata?.name as string) ??
     object.type;
 
-  const date = new Date(object.updated_at).toLocaleDateString("es-CL", {
+  const date = new Date(object.updated_at).toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
   });
@@ -359,7 +359,7 @@ function ObjectRow({ object, icon }: { object: SpatialObject; icon: string }) {
           rel="noopener noreferrer"
           className="text-[10px] text-gray-600 hover:text-blue-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
         >
-          ver
+          view
         </a>
       )}
     </div>

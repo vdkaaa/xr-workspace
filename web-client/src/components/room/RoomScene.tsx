@@ -25,7 +25,7 @@ export function RoomScene() {
 
       {/* HUD overlay */}
       <div className="absolute bottom-4 left-4 font-mono text-[10px] text-gray-600 pointer-events-none">
-        <p>click + drag — rotar · scroll — zoom · right click — pan</p>
+        <p>click + drag — rotate · scroll — zoom · right click — pan</p>
       </div>
     </div>
   );

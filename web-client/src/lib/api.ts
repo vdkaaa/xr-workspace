@@ -31,7 +31,7 @@ async function request<T>(
 
   // Si el servidor respondió con ok: false, lanzamos error
   if (!data.ok) {
-    throw new Error(data.error || 'Error desconocido')
+    throw new Error(data.error || 'Unknown error')
   }
 
   return data.data
